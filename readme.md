@@ -4,6 +4,6 @@
 
 - создать **.env-docker** на основе **.env-docker.example**
 
-- **docker compose up**
+- **docker-compose up**
 
 
