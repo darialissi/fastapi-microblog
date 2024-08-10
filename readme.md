@@ -2,18 +2,8 @@
 
 - **git clone <https://github.com/darialissi/fastapi-microblog.git>**
 
-- **создать 
-<span style="color: #47A76A">
-.env-docker
-</span> 
-на основе 
-<span style="color: #47A76A">
-.env-docker.example
-</span>**
+- **создать .env-docker на основе .env-docker.example**
 
-- **выполнить 
-<span style="color: #F0E68C">
-docker compose up
-</span>**
+- **docker compose up**
 
 
