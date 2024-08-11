@@ -1,6 +1,6 @@
-from models.posts import Posts
+from models.posts import Post
 from utils.repository import SQLAlchemyRepository
 
 
 class PostsRepository(SQLAlchemyRepository):
-    model = Posts
+    model = Post

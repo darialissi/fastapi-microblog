@@ -26,11 +26,11 @@ class SQLAlchemyRepository(AbstractRepository):
     async def add_one(self, data: BaseModel, **ids: int):
         async with async_session() as session:
             add_data = data.model_dump()
-            stmt = insert(self.model).values(**add_data, **ids)
+            stmt = insert(self.model).values(**add_data, **ids).returning(self.model.id)
 
-            await session.execute(stmt)
+            result = await session.execute(stmt)
             await session.commit()
-            return {"response": "Данные успешно добавлены"}
+        return result.scalar_one()
     
 
     async def get_one(self, **filters):
@@ -41,8 +41,7 @@ class SQLAlchemyRepository(AbstractRepository):
                 stmt = stmt.filter(getattr(self.model, key) == val)
 
             result = await session.execute(stmt)
-            model = result.scalar_one_or_none()
-            return model
+            return result.scalar_one_or_none()
     
 
     async def get_all(self, **filters):
@@ -53,8 +52,7 @@ class SQLAlchemyRepository(AbstractRepository):
                 stmt = stmt.filter(getattr(self.model, key) == val)
 
             result = await session.execute(stmt)
-            models = result.scalars().all()
-            return models
+            return result.scalars().all()
 
 
     async def update_one(self, data: BaseModel, **ids: int):
@@ -64,20 +62,20 @@ class SQLAlchemyRepository(AbstractRepository):
             while ids:
                 key, val = ids.popitem()
                 stmt = stmt.filter(getattr(self.model, key) == val)
-            stmt = stmt.values(**update_data)
+            stmt = stmt.values(**update_data).returning(self.model.id)
 
-            await session.execute(stmt)
+            result = await session.execute(stmt)
             await session.commit()
-            return {"response": "Данные успешно обновлены"}
+        return result.scalar_one()
 
 
     async def delete_one(self, **ids: int):
         async with async_session() as session:
-            stmt = delete(self.model)
+            stmt = delete(self.model).returning(self.model.id)
             while ids:
                 key, val = ids.popitem()
                 stmt = stmt.filter(getattr(self.model, key) == val)
 
-            await session.execute(stmt)
+            result = await session.execute(stmt)
             await session.commit()
-            return {"response": "Данные успешно удалены"}
+        return result.scalar_one()

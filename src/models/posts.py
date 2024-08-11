@@ -5,16 +5,16 @@ from db.db import Base
 from typing import Set
 
 from .vars import intpk, created_at, updated_at
-from .comments import Comments
+from .comments import Comment
 from .categories import Category
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .users import Users
+    from .users import User
 
 
-class Posts(Base):
+class Post(Base):
     __tablename__ = 'posts'
 
     id: Mapped[intpk]
@@ -26,5 +26,5 @@ class Posts(Base):
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    user: Mapped['Users'] = relationship(back_populates='posts')
-    comments: Mapped[Set['Comments']] = relationship(back_populates='post') # 1 * n
+    user: Mapped['User'] = relationship(back_populates='posts')
+    comments: Mapped[Set['Comment']] = relationship(back_populates='post') # 1 * n

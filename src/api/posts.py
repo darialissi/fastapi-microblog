@@ -21,7 +21,7 @@ async def add_post(
     posts_service: service,
 ):
     resp = await posts_service.add_post(post)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.get("")
@@ -30,7 +30,7 @@ async def get_posts(
     posts_service: service,
 ):
     resp = await posts_service.get_posts()
-    return resp
+    return {"response": resp}
 
 
 @router.get("/{id_}")
@@ -40,7 +40,7 @@ async def get_post(
     posts_service: service,
 ):
     resp = await posts_service.get_post(id=id_)
-    return resp
+    return {"response": resp}
 
 
 @router.patch("/{id_}")
@@ -50,7 +50,7 @@ async def update_post(
     posts_service: service,
 ):
     resp = await posts_service.update_post(data, id=id_)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.delete("/{id_}")
@@ -59,7 +59,7 @@ async def delete_post(
     posts_service: service,
 ):
     resp = await posts_service.delete_post(id=id_)
-    return resp
+    return {"response": {"id": resp}}
 
 
 

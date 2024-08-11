@@ -20,7 +20,7 @@ async def add_user(
     users_service: service,
 ):
     resp = await users_service.add_user(user)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.get("")
@@ -29,7 +29,7 @@ async def get_users(
     users_service: service,
 ):
     resp = await users_service.get_users()
-    return resp
+    return {"response": resp}
 
 
 @router.get("/{id_}")
@@ -39,7 +39,7 @@ async def get_user(
     users_service: service,
 ):
     resp = await users_service.get_user(id=id_)
-    return resp
+    return {"response": resp}
 
 
 @router.patch("/{id_}")
@@ -49,7 +49,7 @@ async def update_user(
     users_service: service,
 ):
     resp = await users_service.update_user(data, id=id_)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.delete("/{id_}")
@@ -58,4 +58,4 @@ async def delete_user(
     users_service: service,
 ):
     resp = await users_service.delete_user(id=id_)
-    return resp
+    return {"response": {"id": resp}}

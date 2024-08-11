@@ -7,7 +7,7 @@ class UserSchemaAdd(BaseModel):
     """
     Схема модели User, используется при создании
     """
-    username: str = Field(max_length=20)
+    username: str = Field(min_length=5, max_length=30, pattern="^[A-Za-z0-9-_]+$")
     password: str = Field(min_length=5)
 
     model_config = ConfigDict(from_attributes=True)
@@ -25,7 +25,7 @@ class UserSchemaUpdate(BaseModel):
     """
     Схема модели User, используется при обновлении
     """
-    username: str = Field(max_length=20)
+    username: str = Field(min_length=5, max_length=30, pattern="^[A-Za-z0-9-_]+$")
     password: str = Field(min_length=5)
 
 

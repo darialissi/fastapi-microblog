@@ -20,7 +20,7 @@ async def add_comment(
     comments_service: service,
 ):
     resp = await comments_service.add_comment(comment, post_id=post_id)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.get("")
@@ -30,7 +30,7 @@ async def get_comments(
     comments_service: service,
 ):
     resp = await comments_service.get_comments(post_id=post_id)
-    return resp
+    return {"response": resp}
 
 
 @router.get("/{id_}")
@@ -40,7 +40,7 @@ async def get_comment(
     comments_service: service,
 ):
     resp = await comments_service.get_comment(post_id=post_id, id=id_)
-    return resp
+    return {"response": resp}
 
 
 @router.patch("/{id_}")
@@ -51,7 +51,7 @@ async def update_comment(
     comments_service: service,
 ):
     resp = await comments_service.update_comment(data, post_id=post_id, id=id_)
-    return resp
+    return {"response": {"id": resp}}
 
 
 @router.delete("/{id_}")
@@ -61,4 +61,4 @@ async def delete_post(
     comments_service: service,
 ):
     resp = await comments_service.delete_comment(post_id=post_id, id=id_)
-    return resp
+    return {"response": {"id": resp}}

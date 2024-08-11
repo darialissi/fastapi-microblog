@@ -8,18 +8,18 @@ from .vars import intpk, created_at, updated_at
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .posts import Posts
-    from .comments import Comments
+    from .posts import Post
+    from .comments import Comment
 
 
-class Users(Base):
+class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[intpk]
-    username: Mapped[str] = mapped_column(nullable=False)
+    username: Mapped[str] = mapped_column(nullable=False, unique=True)
     password: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    posts: Mapped[Set['Posts'] | None] = relationship(back_populates='user') # 1 * n
-    comments: Mapped[Set['Comments'] | None] = relationship(back_populates='author') # 1 * n
+    posts: Mapped[Set['Post']] = relationship(back_populates='user') # 1 * n
+    comments: Mapped[Set['Comment']] = relationship(back_populates='author') # 1 * n

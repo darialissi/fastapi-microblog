@@ -6,11 +6,11 @@ from .vars import intpk, created_at, updated_at
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .posts import Posts
-    from .users import Users
+    from .posts import Post
+    from .users import User
 
 
-class Comments(Base):
+class Comment(Base):
     __tablename__ = 'comments'
 
     id: Mapped[intpk]
@@ -21,5 +21,5 @@ class Comments(Base):
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    post: Mapped['Posts'] = relationship(back_populates='comments')
-    author: Mapped['Users'] = relationship(back_populates='comments')
+    post: Mapped['Post'] = relationship(back_populates='comments')
+    author: Mapped['User'] = relationship(back_populates='comments')

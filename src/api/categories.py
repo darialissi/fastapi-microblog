@@ -14,7 +14,7 @@ router = APIRouter(
 async def get_posts(category: Category,
     posts_service: service,
 ):
-    posts = await posts_service.get_posts(category=category)
-    return posts
+    resp = await posts_service.get_posts(category=category)
+    return {"response": resp}
 
 
