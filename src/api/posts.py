@@ -7,7 +7,7 @@ from api.dependencies import posts_service
 from schemas.posts import PostSchemaAdd, PostSchemaUpdate
 from services.posts import PostsService
 
-import sqlalchemy.exc as se 
+from sqlalchemy import exc
 
 
 router = APIRouter(
@@ -24,8 +24,8 @@ async def add_post(
 ):
     try:
         resp = await posts_service.add_post(post)
-    except se.IntegrityError as mes:
-        raise HTTPException(status_code=400, detail=f"{mes.orig.args[0]}")
+    except exc.IntegrityError as e:
+        raise HTTPException(status_code=400, detail=f"{e.orig.args[0]}")
     return {"response": {"id": resp}}
 
 

@@ -7,7 +7,7 @@ from api.dependencies import comments_service
 from schemas.comments import CommentSchemaAdd, CommentSchemaUpdate
 from services.comments import CommentsService
 
-import sqlalchemy.exc as se 
+from sqlalchemy import exc
 
 router = APIRouter(
     prefix="/{post_id}/comments",
@@ -23,8 +23,8 @@ async def add_comment(
 ):
     try:
         resp = await comments_service.add_comment(comment, post_id=post_id)
-    except se.IntegrityError as mes:
-        raise HTTPException(status_code=400, detail=f"{mes.orig.args[0]}")
+    except exc.IntegrityError as e:
+        raise HTTPException(status_code=400, detail=f"{e.orig.args[0]}")
     return {"response": {"id": resp}}
 
 
