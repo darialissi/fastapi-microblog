@@ -1,11 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi_cache.decorator import cache
 
 from api.dependencies import comments_service
 from schemas.comments import CommentSchemaAdd, CommentSchemaUpdate
 from services.comments import CommentsService
+
+import sqlalchemy.exc as se 
 
 router = APIRouter(
     prefix="/{post_id}/comments",
@@ -19,7 +21,10 @@ async def add_comment(
     comment: CommentSchemaAdd,
     comments_service: service,
 ):
-    resp = await comments_service.add_comment(comment, post_id=post_id)
+    try:
+        resp = await comments_service.add_comment(comment, post_id=post_id)
+    except se.IntegrityError as mes:
+        raise HTTPException(status_code=400, detail=f"{mes.orig.args[0]}")
     return {"response": {"id": resp}}
 
 
@@ -30,6 +35,8 @@ async def get_comments(
     comments_service: service,
 ):
     resp = await comments_service.get_comments(post_id=post_id)
+    if not resp:
+        raise HTTPException(status_code=404, detail=f"Комментарии {post_id=} не найдены")
     return {"response": resp}
 
 
@@ -40,6 +47,8 @@ async def get_comment(
     comments_service: service,
 ):
     resp = await comments_service.get_comment(post_id=post_id, id=id_)
+    if not resp:
+        raise HTTPException(status_code=404, detail=f"Комментарий {id_=}, {post_id=} не найден")
     return {"response": resp}
 
 
@@ -50,7 +59,10 @@ async def update_comment(
     data: CommentSchemaUpdate,
     comments_service: service,
 ):
-    resp = await comments_service.update_comment(data, post_id=post_id, id=id_)
+    try:
+        resp = await comments_service.update_comment(data, post_id=post_id, id=id_)
+    except se.NoResultFound:
+        raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}
 
 
@@ -60,5 +72,8 @@ async def delete_post(
     id_: int,
     comments_service: service,
 ):
-    resp = await comments_service.delete_comment(post_id=post_id, id=id_)
+    try:
+        resp = await comments_service.delete_comment(post_id=post_id, id=id_)
+    except se.NoResultFound:
+        raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}
