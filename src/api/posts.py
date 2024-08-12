@@ -60,7 +60,7 @@ async def update_post(
 ):
     try:
         resp = await posts_service.update_post(data, id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пост {id_=} не существует")
     return {"response": {"id": resp}}
 
@@ -72,7 +72,7 @@ async def delete_post(
 ):
     try:
         resp = await posts_service.delete_post(id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пост {id_=} не существует")
     return {"response": {"id": resp}}
 

@@ -61,7 +61,7 @@ async def update_comment(
 ):
     try:
         resp = await comments_service.update_comment(data, post_id=post_id, id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}
 
@@ -74,6 +74,6 @@ async def delete_post(
 ):
     try:
         resp = await comments_service.delete_comment(post_id=post_id, id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}

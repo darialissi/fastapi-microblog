@@ -7,7 +7,7 @@ from api.dependencies import users_service
 from schemas.users import UserSchemaAdd, UserSchemaUpdate
 from services.users import UsersService
 
-import sqlalchemy.exc as se 
+from sqlalchemy import exc
 
 router = APIRouter(
     prefix="/users",
@@ -59,7 +59,7 @@ async def update_user(
 ):
     try:
         resp = await users_service.update_user(data, id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
     return {"response": {"id": resp}}
 
@@ -71,6 +71,6 @@ async def delete_user(
 ):
     try:
         resp = await users_service.delete_user(id=id_)
-    except se.NoResultFound:
+    except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
     return {"response": {"id": resp}}
