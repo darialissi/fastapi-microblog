@@ -1,18 +1,31 @@
 from httpx import AsyncClient
 import pytest
 
-@pytest.fixture(scope="session")
-async def add_user(ac: AsyncClient):
-    await ac.post("/users", json={
-        "username": "test user",
-        "password": "12345",
-    })
 
+class TestUsers:
+    @pytest.mark.parametrize(
+        "method, endpoint, expected_status, data",
+        [
+            ("post", "/users", 200, {"username": "user1", "password": "12345"}),    
+            ("post", "/users", 400, {"username": "user1", "password": "12345"}),   # existed username  
+            ("patch", "/users/1", 200, {"username": "newname", "password": "12345"}),    
+            ("patch", "/users/5", 400, {"username": "newname", "password": "12345"}),  
+            ("get", "/users", 200, None),
+            ("get", "/users/1", 200, None),
+            ("get", "/users/5", 404, None), 
+            ("delete", "/users/1", 200, None),
+            ("delete", "/users/5", 400, None),
+        ],
+    )
+    async def test(self, ac: AsyncClient, method, endpoint, expected_status, data):       
+        match method:
+            case "post": 
+                response = await ac.post(endpoint, json=data)
+            case "get":
+                response = await ac.get(endpoint)
+            case "patch":
+                response = await ac.patch(endpoint, json=data)
+            case "delete":
+                response = await ac.delete(endpoint)
 
-async def test_get_user(ac: AsyncClient):
-
-    get_all = await ac.get("/users")
-    assert get_all.status_code == 200
-
-    get_one = await ac.get("/users/1")
-    assert get_one.status_code == 200
+        assert response.status_code == expected_status

@@ -2,7 +2,6 @@ import asyncio
 from typing import AsyncGenerator
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -33,7 +32,7 @@ async def prepare_database():
 
 
 @pytest.fixture(scope="session")
-def event_loop(request):
+def event_loop():
     """Create an instance of the default event loop for each test case."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -45,3 +44,22 @@ transport = ASGITransport(app=app)
 async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+# objects for foreign key relationship
+
+@pytest.fixture
+async def add_user(ac: AsyncClient):
+    await ac.post("/users", json={
+        "username": "userfix",
+        "password": "12345",
+    })
+
+@pytest.fixture
+async def add_post(ac: AsyncClient, add_user):
+    await ac.post("/posts", json={
+        "user_id": 1,
+        "title": "postfix",
+        "category": "development",
+        "body": "test post",
+    })
