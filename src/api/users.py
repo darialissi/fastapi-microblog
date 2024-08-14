@@ -1,39 +1,37 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi_cache.decorator import cache
 
-from api.dependencies import users_service
 from schemas.users import UserSchemaAdd, UserSchemaUpdate
 from services.users import UsersService
+from api.dependencies import UOWDep
 
 from sqlalchemy import exc
+
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
 )
 
-service = Annotated[UsersService, Depends(users_service)]
 
 @router.post("")
 async def add_user(
     user: UserSchemaAdd,
-    users_service: service,
+    uow: UOWDep,
 ):
-    existed = await users_service.get_user(username=user.model_dump()["username"])
+    existed = await UsersService().get_user(uow, username=user.model_dump()["username"])
     if existed:
         raise HTTPException(status_code=400, detail=f"Пользователь с указанным username уже существует")
-    resp = await users_service.add_user(user)
+    resp = await UsersService().add_user(uow, user)
     return {"response": {"id": resp}}
 
 
 @router.get("")
 @cache(expire=30)
 async def get_users(
-    users_service: service,
+    uow: UOWDep,
 ):
-    resp = await users_service.get_users()
+    resp = await UsersService().get_users(uow)
     if not resp:
         raise HTTPException(status_code=404, detail="Пользователи не найдены")
     return {"response": resp}
@@ -43,9 +41,9 @@ async def get_users(
 @cache(expire=30)
 async def get_user(
     id_: int,
-    users_service: service,
+    uow: UOWDep,
 ):
-    resp = await users_service.get_user(id=id_)
+    resp = await UsersService().get_user(uow, id=id_)
     if not resp:
         raise HTTPException(status_code=404, detail=f"Пользователь {id_=} не найден")
     return {"response": resp}
@@ -55,10 +53,10 @@ async def get_user(
 async def update_user(
     id_: int,
     data: UserSchemaUpdate,
-    users_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await users_service.update_user(data, id=id_)
+        resp = await UsersService().update_user(uow, data, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
     return {"response": {"id": resp}}
@@ -67,10 +65,10 @@ async def update_user(
 @router.delete("/{id_}")
 async def delete_user(
     id_: int,
-    users_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await users_service.delete_user(id=id_)
+        resp = await UsersService().delete_user(uow, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
     return {"response": {"id": resp}}

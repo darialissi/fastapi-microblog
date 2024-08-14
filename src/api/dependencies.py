@@ -1,19 +1,8 @@
-from repositories.posts import PostsRepository
-from repositories.users import UsersRepository
-from repositories.comments import CommentsRepository
+from typing import Annotated
 
-from services.posts import PostsService
-from services.users import UsersService
-from services.comments import CommentsService
+from fastapi import Depends
+
+from utils.unitofwork import IUnitOfWork, UnitOfWork
 
 
-def posts_service():
-    return PostsService(PostsRepository)
-
-
-def comments_service():
-    return CommentsService(CommentsRepository)
-
-
-def users_service():
-    return UsersService(UsersRepository)
+UOWDep = Annotated[IUnitOfWork, Depends(UnitOfWork)]

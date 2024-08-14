@@ -1,27 +1,35 @@
 from schemas.users import UserSchemaAdd, UserSchema, UserSchemaUpdate
-from utils.repository import AbstractRepository
+from utils.unitofwork import IUnitOfWork
 
 
 class UsersService:
-    def __init__(self, users_repo: AbstractRepository):
-        self.users_repo: AbstractRepository = users_repo()
 
-    async def add_user(self, user: UserSchemaAdd):
-        u_id = await self.users_repo.add_one(user)
+    async def add_user(self, uow: IUnitOfWork, user: UserSchemaAdd):
+        async with uow:
+            u_id = await uow.users.add_one(user)
+            await uow.commit()
         return u_id
 
-    async def get_user(self, **filters) -> UserSchema:
-        user = await self.users_repo.get_one(**filters)
+    async def get_user(self, uow: IUnitOfWork, **filters) -> UserSchema:
+        async with uow:
+            user = await uow.users.get_one(**filters)
+            await uow.commit()
         return user
 
-    async def get_users(self, **filters) -> list[UserSchema]:
-        users = await self.users_repo.get_all(**filters)
+    async def get_users(self, uow: IUnitOfWork, **filters) -> list[UserSchema]:
+        async with uow:
+            users = await uow.users.get_all(**filters)
+            await uow.commit()
         return users
 
-    async def update_user(self, data: UserSchemaUpdate, **ids):
-        u_id = await self.users_repo.update_one(data, **ids)
+    async def update_user(self, uow: IUnitOfWork, data: UserSchemaUpdate, **ids):
+        async with uow:
+            u_id = await uow.users.update_one(data, **ids)
+            await uow.commit()
         return u_id
 
-    async def delete_user(self, **ids):
-        u_id = await self.users_repo.delete_one(**ids)
+    async def delete_user(self, uow: IUnitOfWork, **ids):
+        async with uow:
+            u_id = await uow.users.delete_one(**ids)
+            await uow.commit()
         return u_id

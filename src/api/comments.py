@@ -1,28 +1,26 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi_cache.decorator import cache
 
-from api.dependencies import comments_service
 from schemas.comments import CommentSchemaAdd, CommentSchemaUpdate
 from services.comments import CommentsService
+from api.dependencies import UOWDep
 
 from sqlalchemy import exc
+
 
 router = APIRouter(
     prefix="/{post_id}/comments",
 )
 
-service = Annotated[CommentsService, Depends(comments_service)]
 
 @router.post("")
 async def add_comment(
     post_id: int,
     comment: CommentSchemaAdd,
-    comments_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await comments_service.add_comment(comment, post_id=post_id)
+        resp = await CommentsService().add_comment(uow, comment, post_id=post_id)
     except exc.IntegrityError as e:
         raise HTTPException(status_code=400, detail=f"{e.orig.args[0]}")
     return {"response": {"id": resp}}
@@ -32,9 +30,9 @@ async def add_comment(
 @cache(expire=30)
 async def get_comments(
     post_id: int,
-    comments_service: service,
+    uow: UOWDep,
 ):
-    resp = await comments_service.get_comments(post_id=post_id)
+    resp = await CommentsService().get_comments(uow, post_id=post_id)
     if not resp:
         raise HTTPException(status_code=404, detail=f"Комментарии {post_id=} не найдены")
     return {"response": resp}
@@ -44,9 +42,9 @@ async def get_comments(
 async def get_comment(
     post_id: int,
     id_: int,
-    comments_service: service,
+    uow: UOWDep,
 ):
-    resp = await comments_service.get_comment(post_id=post_id, id=id_)
+    resp = await CommentsService().get_comment(uow, post_id=post_id, id=id_)
     if not resp:
         raise HTTPException(status_code=404, detail=f"Комментарий {id_=}, {post_id=} не найден")
     return {"response": resp}
@@ -57,10 +55,10 @@ async def update_comment(
     post_id: int,
     id_: int,
     data: CommentSchemaUpdate,
-    comments_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await comments_service.update_comment(data, post_id=post_id, id=id_)
+        resp = await CommentsService().update_comment(uow, data, post_id=post_id, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}
@@ -70,10 +68,10 @@ async def update_comment(
 async def delete_post(
     post_id: int,
     id_: int,
-    comments_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await comments_service.delete_comment(post_id=post_id, id=id_)
+        resp = await CommentsService().delete_comment(uow, post_id=post_id, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
     return {"response": {"id": resp}}

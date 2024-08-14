@@ -2,7 +2,8 @@ import asyncio
 from typing import AsyncGenerator
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
@@ -13,6 +14,8 @@ from src.main import app
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
+
+from utils.unitofwork import UnitOfWork
 
 
 engine_test = create_async_engine(settings.DATABASE_URL_asyncpg, poolclass=NullPool)
@@ -31,6 +34,13 @@ async def prepare_database():
         await conn.run_sync(Base.metadata.drop_all)
 
 
+# class UnitOfWorkTest(UnitOfWork):
+#     def __init__(self):
+#         self.session_factory = async_session
+
+# app.dependency_overrides[UnitOfWork] = UnitOfWorkTest
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for each test case."""
@@ -38,11 +48,12 @@ def event_loop():
     yield loop
     loop.close()
 
-transport = ASGITransport(app=app)
+
+client = TestClient(app)
 
 @pytest.fixture(scope="session")
 async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
 
 

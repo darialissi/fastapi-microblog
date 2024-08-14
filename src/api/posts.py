@@ -1,11 +1,9 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi_cache.decorator import cache
 
-from api.dependencies import posts_service
 from schemas.posts import PostSchemaAdd, PostSchemaUpdate
 from services.posts import PostsService
+from api.dependencies import UOWDep
 
 from sqlalchemy import exc
 
@@ -15,15 +13,14 @@ router = APIRouter(
     tags=["Posts"],
 )
 
-service = Annotated[PostsService, Depends(posts_service)]
 
 @router.post("")
 async def add_post(
     post: PostSchemaAdd,
-    posts_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await posts_service.add_post(post)
+        resp = await PostsService().add_post(uow, post)
     except exc.IntegrityError as e:
         raise HTTPException(status_code=400, detail=f"{e.orig.args[0]}")
     return {"response": {"id": resp}}
@@ -32,9 +29,9 @@ async def add_post(
 @router.get("")
 @cache(expire=30)
 async def get_posts(
-    posts_service: service,
+    uow: UOWDep,
 ):
-    resp = await posts_service.get_posts()
+    resp = await PostsService().get_posts(uow)
     if not resp:
         raise HTTPException(status_code=404, detail="Посты не найдены")
     return {"response": resp}
@@ -44,9 +41,9 @@ async def get_posts(
 @cache(expire=30)
 async def get_post(
     id_: int,
-    posts_service: service,
+    uow: UOWDep,
 ):
-    resp = await posts_service.get_post(id=id_)
+    resp = await PostsService().get_post(uow, id=id_)
     if not resp:
         raise HTTPException(status_code=404, detail=f"Пост {id_=} не найден")
     return {"response": resp}
@@ -56,10 +53,10 @@ async def get_post(
 async def update_post(
     id_: int,
     data: PostSchemaUpdate,
-    posts_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await posts_service.update_post(data, id=id_)
+        resp = await PostsService().update_post(uow, data, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пост {id_=} не существует")
     return {"response": {"id": resp}}
@@ -68,10 +65,10 @@ async def update_post(
 @router.delete("/{id_}")
 async def delete_post(
     id_: int,
-    posts_service: service,
+    uow: UOWDep,
 ):
     try:
-        resp = await posts_service.delete_post(id=id_)
+        resp = await PostsService().delete_post(uow, id=id_)
     except exc.NoResultFound:
         raise HTTPException(status_code=400, detail=f"Пост {id_=} не существует")
     return {"response": {"id": resp}}

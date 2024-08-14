@@ -1,27 +1,35 @@
 from schemas.comments import CommentSchemaAdd, CommentSchema, CommentSchemaUpdate
-from utils.repository import AbstractRepository
+from utils.unitofwork import IUnitOfWork
 
 
 class CommentsService:
-    def __init__(self, comments_repo: AbstractRepository):
-        self.comments_repo: AbstractRepository = comments_repo()
 
-    async def add_comment(self, comment: CommentSchemaAdd, **ids):
-        c_id = await self.comments_repo.add_one(comment, **ids)
+    async def add_comment(self, uow: IUnitOfWork, comment: CommentSchemaAdd, **ids):
+        async with uow:
+            c_id = await uow.comments.add_one(comment, **ids)
+            await uow.commit()
         return c_id
 
-    async def get_comment(self, **filters) -> CommentSchema:
-        comment = await self.comments_repo.get_one(**filters)
+    async def get_comment(self, uow: IUnitOfWork, **filters) -> CommentSchema:
+        async with uow:
+            comment = await uow.comments.get_one(**filters)
+            await uow.commit()
         return comment
 
-    async def get_comments(self, **filters) -> list[CommentSchema]:
-        comments = await self.comments_repo.get_all(**filters)
+    async def get_comments(self, uow: IUnitOfWork, **filters) -> list[CommentSchema]:
+        async with uow:
+            comments = await uow.comments.get_all(**filters)
+            await uow.commit()
         return comments
 
-    async def update_comment(self, data: CommentSchemaUpdate, **ids):
-        c_id = await self.comments_repo.update_one(data, **ids)
+    async def update_comment(self, uow: IUnitOfWork, data: CommentSchemaUpdate, **ids):
+        async with uow:
+            c_id = await uow.comments.update_one(data, **ids)
+            await uow.commit()
         return c_id
 
-    async def delete_comment(self, **ids):
-        c_id = await self.comments_repo.delete_one(**ids)
+    async def delete_comment(self, uow: IUnitOfWork, **ids):
+        async with uow:
+            c_id = await uow.comments.delete_one(**ids)
+            await uow.commit()
         return c_id
