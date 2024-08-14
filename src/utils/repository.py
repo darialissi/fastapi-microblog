@@ -18,6 +18,14 @@ class AbstractRepository(ABC):
     @abstractmethod
     async def get_all():
         raise NotImplementedError
+    
+    @abstractmethod
+    async def update_one():
+        raise NotImplementedError
+    
+    @abstractmethod
+    async def delete_one():
+        raise NotImplementedError
 
 
 class SQLAlchemyRepository(AbstractRepository):
@@ -30,8 +38,7 @@ class SQLAlchemyRepository(AbstractRepository):
 
             result = await session.execute(stmt)
             await session.commit()
-        return result.scalar_one()
-    
+        return result.scalar_one()    
 
     async def get_one(self, **filters):
         async with async_session() as session:
@@ -41,8 +48,7 @@ class SQLAlchemyRepository(AbstractRepository):
                 stmt = stmt.filter(getattr(self.model, key) == val)
 
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
-    
+            return result.scalar_one_or_none()    
 
     async def get_all(self, **filters):
         async with async_session() as session:
@@ -53,7 +59,6 @@ class SQLAlchemyRepository(AbstractRepository):
 
             result = await session.execute(stmt)
             return result.scalars().all()
-
 
     async def update_one(self, data: BaseModel, **ids: int):
         async with async_session() as session:
@@ -67,7 +72,6 @@ class SQLAlchemyRepository(AbstractRepository):
             result = await session.execute(stmt)
             await session.commit()
         return result.scalar_one()
-
 
     async def delete_one(self, **ids: int):
         async with async_session() as session:

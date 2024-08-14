@@ -16,7 +16,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[intpk]
-    username: Mapped[str] = mapped_column(nullable=False, unique=True)
+    username: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     password: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]

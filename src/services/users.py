@@ -1,5 +1,6 @@
 from schemas.users import UserSchemaAdd, UserSchema, UserSchemaUpdate
 from utils.repository import AbstractRepository
+from hashlib import sha512
 
 
 class UsersService:
@@ -7,6 +8,7 @@ class UsersService:
         self.users_repo: AbstractRepository = users_repo()
 
     async def add_user(self, user: UserSchemaAdd):
+        user.password = sha512(user.model_dump()["password"].encode()).hexdigest()
         u_id = await self.users_repo.add_one(user)
         return u_id
 
@@ -19,6 +21,7 @@ class UsersService:
         return users
 
     async def update_user(self, data: UserSchemaUpdate, **ids):
+        data.password = sha512(data.model_dump()["password"].encode()).hexdigest()
         u_id = await self.users_repo.update_one(data, **ids)
         return u_id
 

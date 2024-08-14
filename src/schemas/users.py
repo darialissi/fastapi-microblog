@@ -8,18 +8,21 @@ class UserSchemaAdd(BaseModel):
     Схема модели User, используется при создании
     """
     username: str = Field(min_length=5, max_length=30, pattern="^[A-Za-z0-9-_]+$")
-    password: str = Field(min_length=5)
+    password: str = Field(min_length=5, max_length=30)
 
     model_config = ConfigDict(from_attributes=True)
 
-class UserSchema(UserSchemaAdd):
+class UserSchema(BaseModel):
     """
-    Общая схема модели User
+    Общая схема модели User, исключая password
     """
     id: int
+    username: str
     created_at: datetime
     updated_at: datetime
     posts: Set
+
+    model_config = ConfigDict(from_attributes=True)
 
 class UserSchemaUpdate(BaseModel):
     """
