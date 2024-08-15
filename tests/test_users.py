@@ -6,7 +6,7 @@ class TestUsers:
     @pytest.mark.parametrize(
         "method, endpoint, expected_status, data",
         [
-            ("post", "/users", 200, {"username": "user1", "password": "12345"}),    
+            ("post", "/users", 201, {"username": "user1", "password": "12345"}),    
             ("post", "/users", 400, {"username": "user1", "password": "12345"}),   # existed username  
             ("patch", "/users/1", 200, {"username": "newname", "password": "12345"}),    
             ("patch", "/users/5", 400, {"username": "newname", "password": "12345"}),  

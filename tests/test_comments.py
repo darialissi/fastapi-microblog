@@ -6,7 +6,7 @@ class TestComments:
     @pytest.mark.parametrize(
         "method, endpoint, expected_status, data",
         [
-            ("post", "/posts/1/comments", 200, {
+            ("post", "/posts/1/comments", 201, {
                                     "author_id": 1,
                                     "body": "test comment",
                                     }),      

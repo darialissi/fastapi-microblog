@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
 from api.dependencies import comments_service
@@ -15,7 +15,7 @@ router = APIRouter(
 
 service = Annotated[CommentsService, Depends(comments_service)]
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def add_comment(
     post_id: int,
     comment: CommentSchemaAdd,

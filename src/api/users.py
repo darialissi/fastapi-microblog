@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
 from api.dependencies import users_service
@@ -16,7 +16,7 @@ router = APIRouter(
 
 service = Annotated[UsersService, Depends(users_service)]
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def add_user(
     user: UserSchemaAdd,
     users_service: service,

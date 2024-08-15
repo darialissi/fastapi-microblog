@@ -7,7 +7,7 @@ class TestPosts:
     @pytest.mark.parametrize(
         "method, endpoint, expected_status, data",
         [ 
-            ("post", "/posts", 200, {
+            ("post", "/posts", 201, {
                                     "user_id": 1,
                                     "title": "test title",
                                     "category": "development",
