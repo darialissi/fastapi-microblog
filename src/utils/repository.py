@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel
 
 from sqlalchemy import select, insert, update, delete
-
-from db.db import async_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AbstractRepository(ABC):
@@ -31,55 +30,50 @@ class AbstractRepository(ABC):
 class SQLAlchemyRepository(AbstractRepository):
     model = None
 
-    async def add_one(self, data: BaseModel, **ids: int):
-        async with async_session() as session:
-            add_data = data.model_dump()
-            stmt = insert(self.model).values(**add_data, **ids).returning(self.model.id)
+    async def add_one(self, session: AsyncSession, data: BaseModel, **ids: int):
+        add_data = data.model_dump()
+        stmt = insert(self.model).values(**add_data, **ids).returning(self.model.id)
 
-            result = await session.execute(stmt)
-            await session.commit()
+        result = await session.execute(stmt)
+        await session.commit()
         return result.scalar_one()    
 
-    async def get_one(self, **filters):
-        async with async_session() as session:
-            stmt = select(self.model)
-            while filters:
-                key, val = filters.popitem()
-                stmt = stmt.filter(getattr(self.model, key) == val)
+    async def get_one(self, session: AsyncSession, **filters):
+        stmt = select(self.model)
+        while filters:
+            key, val = filters.popitem()
+            stmt = stmt.filter(getattr(self.model, key) == val)
 
-            result = await session.execute(stmt)
-            return result.scalar_one_or_none()    
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()    
 
-    async def get_all(self, **filters):
-        async with async_session() as session:
-            stmt = select(self.model)
-            while filters:
-                key, val = filters.popitem()
-                stmt = stmt.filter(getattr(self.model, key) == val)
+    async def get_all(self, session: AsyncSession, **filters):
+        stmt = select(self.model)
+        while filters:
+            key, val = filters.popitem()
+            stmt = stmt.filter(getattr(self.model, key) == val)
 
-            result = await session.execute(stmt)
-            return result.scalars().all()
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
-    async def update_one(self, data: BaseModel, **ids: int):
-        async with async_session() as session:
-            update_data = data.model_dump()
-            stmt = update(self.model)
-            while ids:
-                key, val = ids.popitem()
-                stmt = stmt.filter(getattr(self.model, key) == val)
-            stmt = stmt.values(**update_data).returning(self.model.id)
+    async def update_one(self, session: AsyncSession, data: BaseModel, **ids: int):
+        update_data = data.model_dump()
+        stmt = update(self.model)
+        while ids:
+            key, val = ids.popitem()
+            stmt = stmt.filter(getattr(self.model, key) == val)
+        stmt = stmt.values(**update_data).returning(self.model.id)
 
-            result = await session.execute(stmt)
-            await session.commit()
+        result = await session.execute(stmt)
+        await session.commit()
         return result.scalar_one()
 
-    async def delete_one(self, **ids: int):
-        async with async_session() as session:
-            stmt = delete(self.model).returning(self.model.id)
-            while ids:
-                key, val = ids.popitem()
-                stmt = stmt.filter(getattr(self.model, key) == val)
+    async def delete_one(self, session: AsyncSession, **ids: int):
+        stmt = delete(self.model).returning(self.model.id)
+        while ids:
+            key, val = ids.popitem()
+            stmt = stmt.filter(getattr(self.model, key) == val)
 
-            result = await session.execute(stmt)
-            await session.commit()
+        result = await session.execute(stmt)
+        await session.commit()
         return result.scalar_one()
