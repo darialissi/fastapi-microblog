@@ -8,7 +8,8 @@ class PostsService:
         self.posts_repo: AbstractRepository = posts_repo()
 
     async def add_post(self, session: AsyncSession, post: PostSchemaAdd):
-        p_id = await self.posts_repo.add_one(session, post)
+        p_dict = post.model_dump()
+        p_id = await self.posts_repo.add_one(session, p_dict)
         return p_id
 
     async def get_post(self, session: AsyncSession, **filters) -> PostSchema:
@@ -19,8 +20,9 @@ class PostsService:
         posts = await self.posts_repo.get_all(session, **filters)
         return posts
 
-    async def update_post(self, session: AsyncSession, data: PostSchemaUpdate, **ids):
-        p_id = await self.posts_repo.update_one(session, data, **ids)
+    async def update_post(self, session: AsyncSession, post: PostSchemaUpdate, **ids):
+        p_dict = post.model_dump()
+        p_id = await self.posts_repo.update_one(session, p_dict, **ids)
         return p_id
 
     async def delete_post(self, session: AsyncSession, **ids):

@@ -1,5 +1,4 @@
 from typing import Annotated
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
@@ -9,6 +8,7 @@ from schemas.users import UserSchemaAdd, UserSchemaUpdate
 from services.users import UsersService
 
 from sqlalchemy import exc
+
 
 router = APIRouter(
     prefix="/users",
@@ -39,6 +39,8 @@ async def get_users(
     resp = await users_service.get_users(session)
     if not resp:
         raise HTTPException(status_code=404, detail="Пользователи не найдены")
+    for user in resp:
+        user.__dict__.pop("hashed_password")
     return {"response": resp}
 
 
@@ -52,6 +54,7 @@ async def get_user(
     resp = await users_service.get_user(session, id=id_)
     if not resp:
         raise HTTPException(status_code=404, detail=f"Пользователь {id_=} не найден")
+    resp.__dict__.pop("hashed_password")
     return {"response": resp}
 
 

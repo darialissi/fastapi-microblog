@@ -1,7 +1,8 @@
 from schemas.users import UserSchemaAdd, UserSchema, UserSchemaUpdate
 from utils.repository import AbstractRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-from hashlib import sha512
+
+from utils.password import hash_password
 
 
 class UsersService:
@@ -9,8 +10,10 @@ class UsersService:
         self.users_repo: AbstractRepository = users_repo()
 
     async def add_user(self, session: AsyncSession, user: UserSchemaAdd):
-        #user.password = sha512(user.model_dump()["password"].encode()).hexdigest()
-        u_id = await self.users_repo.add_one(session, user)
+        u_dict = user.model_dump()
+        password = u_dict.pop("password")
+        u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
+        u_id = await self.users_repo.add_one(session, u_dict)
         return u_id
 
     async def get_user(self, session: AsyncSession, **filters) -> UserSchema:
@@ -21,9 +24,11 @@ class UsersService:
         users = await self.users_repo.get_all(session, **filters)
         return users
 
-    async def update_user(self, session: AsyncSession, data: UserSchemaUpdate, **ids):
-        data.password = sha512(data.model_dump()["password"].encode()).hexdigest()
-        u_id = await self.users_repo.update_one(session, data, **ids)
+    async def update_user(self, session: AsyncSession, user: UserSchemaUpdate, **ids):
+        u_dict = user.model_dump()
+        password = u_dict.pop("password")
+        u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
+        u_id = await self.users_repo.update_one(session, u_dict, **ids)
         return u_id
 
     async def delete_user(self, session: AsyncSession, **ids):

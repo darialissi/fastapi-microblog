@@ -30,9 +30,8 @@ class AbstractRepository(ABC):
 class SQLAlchemyRepository(AbstractRepository):
     model = None
 
-    async def add_one(self, session: AsyncSession, data: BaseModel, **ids: int):
-        add_data = data.model_dump()
-        stmt = insert(self.model).values(**add_data, **ids).returning(self.model.id)
+    async def add_one(self, session: AsyncSession, data: dict, **ids: int):
+        stmt = insert(self.model).values(**data, **ids).returning(self.model.id)
 
         result = await session.execute(stmt)
         await session.commit()
@@ -56,13 +55,12 @@ class SQLAlchemyRepository(AbstractRepository):
         result = await session.execute(stmt)
         return result.scalars().all()
 
-    async def update_one(self, session: AsyncSession, data: BaseModel, **ids: int):
-        update_data = data.model_dump()
+    async def update_one(self, session: AsyncSession, data: dict, **ids: int):
         stmt = update(self.model)
         while ids:
             key, val = ids.popitem()
             stmt = stmt.filter(getattr(self.model, key) == val)
-        stmt = stmt.values(**update_data).returning(self.model.id)
+        stmt = stmt.values(**data).returning(self.model.id)
 
         result = await session.execute(stmt)
         await session.commit()

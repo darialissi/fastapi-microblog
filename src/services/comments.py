@@ -8,7 +8,8 @@ class CommentsService:
         self.comments_repo: AbstractRepository = comments_repo()
 
     async def add_comment(self, session: AsyncSession, comment: CommentSchemaAdd, **ids):
-        c_id = await self.comments_repo.add_one(session, comment, **ids)
+        c_dict = comment.model_dump()
+        c_id = await self.comments_repo.add_one(session, c_dict, **ids)
         return c_id
 
     async def get_comment(self, session: AsyncSession, **filters) -> CommentSchema:
@@ -19,8 +20,9 @@ class CommentsService:
         comments = await self.comments_repo.get_all(session, **filters)
         return comments
 
-    async def update_comment(self, session: AsyncSession, data: CommentSchemaUpdate, **ids):
-        c_id = await self.comments_repo.update_one(session, data, **ids)
+    async def update_comment(self, session: AsyncSession, comment: CommentSchemaUpdate, **ids):
+        c_dict = comment.model_dump()
+        c_id = await self.comments_repo.update_one(session, c_dict, **ids)
         return c_id
 
     async def delete_comment(self, session: AsyncSession, **ids):

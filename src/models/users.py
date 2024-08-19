@@ -17,7 +17,7 @@ class User(Base):
 
     id: Mapped[intpk]
     username: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
-    password: Mapped[str] = mapped_column(nullable=False)
+    hashed_password: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
