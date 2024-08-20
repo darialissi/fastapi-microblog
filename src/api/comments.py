@@ -7,6 +7,8 @@ from api.dependencies import comments_service, session
 from schemas.comments import CommentSchemaAdd, CommentSchemaUpdate
 from services.comments import CommentsService
 
+from .auth.router import get_current_user
+
 from sqlalchemy import exc
 
 router = APIRouter(
@@ -21,6 +23,7 @@ async def add_comment(
     comment: CommentSchemaAdd,
     comments_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await comments_service.add_comment(session, comment, post_id=post_id)
@@ -62,6 +65,7 @@ async def update_comment(
     data: CommentSchemaUpdate,
     comments_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await comments_service.update_comment(session, data, post_id=post_id, id=id_)
@@ -76,6 +80,7 @@ async def delete_post(
     id_: int,
     comments_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await comments_service.delete_comment(session, post_id=post_id, id=id_)

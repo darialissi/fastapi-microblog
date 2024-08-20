@@ -2,6 +2,8 @@
 .pytest_cache
 .vscode
 
+# certs
+
 venv
 
 .env

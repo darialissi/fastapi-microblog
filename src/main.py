@@ -14,7 +14,7 @@ from config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    redis = aioredis.from_url(settings.REDIS_URL)
+    redis = aioredis.from_url(settings.db.REDIS_URL)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     await create_tables()
     yield

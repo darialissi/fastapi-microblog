@@ -15,7 +15,7 @@ from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
 
-engine_test = create_async_engine(settings.DATABASE_URL_asyncpg, poolclass=NullPool)
+engine_test = create_async_engine(settings.db.DATABASE_URL_asyncpg, poolclass=NullPool)
 async_session = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 Base.metadata.bind = engine_test
 
@@ -27,7 +27,7 @@ app.dependency_overrides[get_async_session] = override_get_async_session
 
 @pytest.fixture(autouse=True, scope="session")
 async def prepare_database():
-    redis = aioredis.from_url(settings.REDIS_URL)
+    redis = aioredis.from_url(settings.db.REDIS_URL)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

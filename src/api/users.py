@@ -4,10 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
 from api.dependencies import users_service, session
-from schemas.users import UserSchemaAdd, UserSchemaUpdate
+from schemas.users import UserSchemaAdd
 from services.users import UsersService
-
-from sqlalchemy import exc
 
 
 router = APIRouter(
@@ -56,30 +54,3 @@ async def get_user(
         raise HTTPException(status_code=404, detail=f"Пользователь {id_=} не найден")
     resp.__dict__.pop("hashed_password")
     return {"response": resp}
-
-
-@router.patch("/{id_}")
-async def update_user(
-    id_: int,
-    data: UserSchemaUpdate,
-    users_service: service,
-    session: session,
-):
-    try:
-        resp = await users_service.update_user(session, data, id=id_)
-    except exc.NoResultFound:
-        raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
-    return {"response": {"id": resp}}
-
-
-@router.delete("/{id_}")
-async def delete_user(
-    id_: int,
-    users_service: service,
-    session: session,
-):
-    try:
-        resp = await users_service.delete_user(session, id=id_)
-    except exc.NoResultFound:
-        raise HTTPException(status_code=400, detail=f"Пользователь {id_=} не существует")
-    return {"response": {"id": resp}}

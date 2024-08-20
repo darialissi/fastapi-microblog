@@ -7,6 +7,8 @@ from api.dependencies import posts_service, session
 from schemas.posts import PostSchemaAdd, PostSchemaUpdate
 from services.posts import PostsService
 
+from .auth.router import get_current_user
+
 from sqlalchemy import exc
 
 
@@ -23,6 +25,7 @@ async def add_post(
     post: PostSchemaAdd,
     posts_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await posts_service.add_post(session, post)
@@ -62,6 +65,7 @@ async def update_post(
     data: PostSchemaUpdate,
     posts_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await posts_service.update_post(session, data, id=id_)
@@ -75,6 +79,7 @@ async def delete_post(
     id_: int,
     posts_service: service,
     session: session,
+    user: str = Depends(get_current_user),
 ):
     try:
         resp = await posts_service.delete_post(session, id=id_)
