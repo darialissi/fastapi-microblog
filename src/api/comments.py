@@ -28,7 +28,10 @@ async def add_comment(
     try:
         resp = await comments_service.add_comment(session, comment, post_id=post_id)
     except exc.IntegrityError as e:
-        raise HTTPException(status_code=400, detail=f"{e.orig.args[0]}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{e.orig.args[0]}",
+        )
     return {"response": {"id": resp}}
 
 
@@ -41,7 +44,10 @@ async def get_comments(
 ):
     resp = await comments_service.get_comments(session, post_id=post_id)
     if not resp:
-        raise HTTPException(status_code=404, detail=f"Комментарии {post_id=} не найдены")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Комментарии {post_id=} не найдены",
+        )
     return {"response": resp}
 
 
@@ -54,7 +60,10 @@ async def get_comment(
 ):
     resp = await comments_service.get_comment(session, post_id=post_id, id=id_)
     if not resp:
-        raise HTTPException(status_code=404, detail=f"Комментарий {id_=}, {post_id=} не найден")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Комментарий {id_=}, {post_id=} не найден",
+        )
     return {"response": resp}
 
 
@@ -70,7 +79,10 @@ async def update_comment(
     try:
         resp = await comments_service.update_comment(session, data, post_id=post_id, id=id_)
     except exc.NoResultFound:
-        raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Комментарий {id_=}, {post_id=} не существует",
+        )
     return {"response": {"id": resp}}
 
 
@@ -85,5 +97,8 @@ async def delete_post(
     try:
         resp = await comments_service.delete_comment(session, post_id=post_id, id=id_)
     except exc.NoResultFound:
-        raise HTTPException(status_code=400, detail=f"Комментарий {id_=}, {post_id=} не существует")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Комментарий {id_=}, {post_id=} не существует",
+        )
     return {"response": {"id": resp}}
