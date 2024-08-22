@@ -21,7 +21,7 @@ async def get_posts(
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Посты {category=} не найдены",
+            detail=f"Посты {category.value=} не найдены",
         )
     return {"response": resp}
 

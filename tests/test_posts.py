@@ -1,52 +1,59 @@
 from httpx import AsyncClient
 import pytest
 
+from fastapi import status
 
-@pytest.mark.usefixtures("add_user")
+
 class TestPosts:
     @pytest.mark.parametrize(
         "method, endpoint, expected_status, data",
         [ 
-            ("post", "/posts", 201, {
+            ("post", "/posts", status.HTTP_201_CREATED, {
                                     "user_id": 1,
                                     "title": "test title",
                                     "category": "development",
                                     "body": "test post",
                                     }),     
-            ("post", "/posts", 400, {
+            ("post", "/posts", status.HTTP_400_BAD_REQUEST, {
                                     "user_id": 5, 
                                     "title": "test title",
                                     "category": "development",
                                     "body": "test post",
                                     }),  
-            ("patch", "/posts/1", 200, {
+            ("patch", "/posts/1", status.HTTP_200_OK, {
                                         "title": "new title",
                                         "category": "development",
                                         "body": "test post",
                                     }),   
-            ("patch", "/posts/5", 400, {
+            ("patch", "/posts/5", status.HTTP_400_BAD_REQUEST, {
                                         "title": "new title",
                                         "category": "development",
                                         "body": "test post",
                                     }),  
-            ("get", "/posts", 200, None),
-            ("get", "/posts/1", 200, None),
-            ("get", "/posts/5", 404, None),
-            ("get", "/posts/categories/development", 200, None),
-            ("get", "/posts/categories/design", 404, None),
-            ("delete", "/posts/1", 200, None),
-            ("delete", "/posts/5", 400, None),
+            ("get", "/posts", status.HTTP_200_OK, None),
+            ("get", "/posts/1", status.HTTP_200_OK, None),
+            ("get", "/posts/5", status.HTTP_404_NOT_FOUND, None),
+            ("get", "/posts/categories/development", status.HTTP_200_OK, None),
+            ("get", "/posts/categories/design", status.HTTP_404_NOT_FOUND, None),
+            ("delete", "/posts/1", status.HTTP_200_OK, None),
+            ("delete", "/posts/5", status.HTTP_400_BAD_REQUEST, None),
         ],
     )
-    async def test(self, ac: AsyncClient, method, endpoint, expected_status, data):       
+    async def test(self, ac: AsyncClient, user_data, method, endpoint, expected_status, data):    
+
+        # auth user
+        await ac.post("/auth/register", json=user_data)
+        response = await ac.post("/auth/token", data=user_data)
+        access_token = response.json()["access_token"]  
+
         match method:
             case "post": 
-                response = await ac.post(endpoint, json=data)
+                response = await ac.post(endpoint, json=data, headers={"Authorization": f"Bearer {access_token}"})
             case "get":
                 response = await ac.get(endpoint)
             case "patch":
-                response = await ac.patch(endpoint, json=data)
+                response = await ac.patch(endpoint, json=data, headers={"Authorization": f"Bearer {access_token}"})
             case "delete":
-                response = await ac.delete(endpoint)
+                response = await ac.delete(endpoint, headers={"Authorization": f"Bearer {access_token}"})
 
         assert response.status_code == expected_status

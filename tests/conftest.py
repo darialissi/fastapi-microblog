@@ -8,14 +8,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
 from db.db import Base, get_async_session
-from src.config import settings
 from src.main import app
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
 
-engine_test = create_async_engine(settings.db.DATABASE_URL_asyncpg, poolclass=NullPool)
+DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5433/test"
+REDIS_URL = "redis://localhost:6380"
+
+engine_test = create_async_engine(DATABASE_URL, poolclass=NullPool)
 async_session = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 Base.metadata.bind = engine_test
 
@@ -27,14 +29,13 @@ app.dependency_overrides[get_async_session] = override_get_async_session
 
 @pytest.fixture(autouse=True, scope="session")
 async def prepare_database():
-    redis = aioredis.from_url(settings.db.REDIS_URL)
+    redis = aioredis.from_url(REDIS_URL)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -50,21 +51,9 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
-
-# objects for foreign key relationship
-
-@pytest.fixture
-async def add_user(ac: AsyncClient):
-    await ac.post("/users", json={
+@pytest.fixture(scope="session")
+def user_data():
+    return {
         "username": "userfix",
-        "password": "12345",
-    })
-
-@pytest.fixture
-async def add_post(ac: AsyncClient, add_user):
-    await ac.post("/posts", json={
-        "user_id": 1,
-        "title": "postfix",
-        "category": "development",
-        "body": "test post",
-    })
+        "password": "12345"
+    }
