@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
+from sqlalchemy import exc
 
 from api.dependencies import posts_service, session
 from schemas.posts import PostSchemaAdd, PostSchemaUpdate
@@ -9,26 +10,23 @@ from services.posts import PostsService
 
 from .auth.router import get_current_user
 
-from sqlalchemy import exc
-
-
 router = APIRouter(
     prefix="/posts",
     tags=["Posts"],
 )
 
-service = Annotated[PostsService, Depends(posts_service)]
+Service = Annotated[PostsService, Depends(posts_service)]
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, summary="Добавление нового поста")
 async def add_post(
     post: PostSchemaAdd,
-    posts_service: service,
+    posts_service: Service,
     session: session,
     user: str = Depends(get_current_user),
 ):
     try:
-        resp = await posts_service.add_post(session, post)
+        resp = await posts_service.add_post(session, user, post)
     except exc.IntegrityError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -37,10 +35,10 @@ async def add_post(
     return {"response": {"id": resp}}
 
 
-@router.get("")
+@router.get("", summary="Получение всех постов пользователя")
 @cache(expire=30)
 async def get_posts(
-    posts_service: service,
+    posts_service: Service,
     session: session,
 ):
     resp = await posts_service.get_posts(session)
@@ -52,11 +50,11 @@ async def get_posts(
     return {"response": resp}
 
 
-@router.get("/{id_}")
+@router.get("/{id_}", summary="Получение поста")
 @cache(expire=30)
 async def get_post(
     id_: int,
-    posts_service: service,
+    posts_service: Service,
     session: session,
 ):
     resp = await posts_service.get_post(session, id=id_)
@@ -68,11 +66,11 @@ async def get_post(
     return {"response": resp}
 
 
-@router.patch("/{id_}")
+@router.patch("/{id_}", summary="Обновление поста")
 async def update_post(
     id_: int,
     data: PostSchemaUpdate,
-    posts_service: service,
+    posts_service: Service,
     session: session,
     user: str = Depends(get_current_user),
 ):
@@ -86,10 +84,10 @@ async def update_post(
     return {"response": {"id": resp}}
 
 
-@router.delete("/{id_}")
+@router.delete("/{id_}", summary="Удаление поста")
 async def delete_post(
     id_: int,
-    posts_service: service,
+    posts_service: Service,
     session: session,
     user: str = Depends(get_current_user),
 ):
@@ -101,6 +99,3 @@ async def delete_post(
             detail=f"Пост {id_=} не существует",
         )
     return {"response": {"id": resp}}
-
-
-

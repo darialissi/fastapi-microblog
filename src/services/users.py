@@ -1,8 +1,8 @@
-from schemas.users import UserSchemaAdd, UserSchema, UserSchemaUpdate
-from utils.repository import AbstractRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from schemas.users import UserSchema, UserSchemaAdd, UserSchemaUpdate
 from utils.password import hash_password
+from utils.repository import AbstractRepository
 
 
 class UsersService:
@@ -14,6 +14,7 @@ class UsersService:
         password = u_dict.pop("password")
         u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
         u_id = await self.users_repo.add_one(session, u_dict)
+        await session.commit()
         return u_id
 
     async def get_user(self, session: AsyncSession, **filters) -> UserSchema:
@@ -29,8 +30,10 @@ class UsersService:
         password = u_dict.pop("password")
         u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
         u_id = await self.users_repo.update_one(session, u_dict, **ids)
+        await session.commit()
         return u_id
 
     async def delete_user(self, session: AsyncSession, **ids):
         u_id = await self.users_repo.delete_one(session, **ids)
+        await session.commit()
         return u_id

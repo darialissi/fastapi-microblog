@@ -20,12 +20,26 @@ python-multipart = "^0.0.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
+black = "^24.8.0"
+isort = "^5.13.2"
+flake8-pyproject = "^1.2.3"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.black]
+line-length = 120
+target_version = ["py311"]
+
+[tool.isort]
+profile = "black"
+py_version = 311
+
+[tool.flake8]
+max-line-length = 120
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
 asyncio_mode = "auto"
 filterwarnings = "ignore::DeprecationWarning"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

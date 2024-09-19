@@ -3,22 +3,21 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
-from api.dependencies import users_service, session
+from api.dependencies import session, users_service
 from services.users import UsersService
-
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
 )
 
-service = Annotated[UsersService, Depends(users_service)]
+Service = Annotated[UsersService, Depends(users_service)]
 
 
-@router.get("")
+@router.get("", summary="Получение всех пользователей")
 @cache(expire=30)
 async def get_users(
-    users_service: service,
+    users_service: Service,
     session: session,
 ):
     resp = await users_service.get_users(session)
@@ -32,11 +31,11 @@ async def get_users(
     return {"response": resp}
 
 
-@router.get("/{id_}")
+@router.get("/{id_}", summary="Получение пользователя")
 @cache(expire=30)
 async def get_user(
     id_: int,
-    users_service: service,
+    users_service: Service,
     session: session,
 ):
     resp = await users_service.get_user(session, id=id_)

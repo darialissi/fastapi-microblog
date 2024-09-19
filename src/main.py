@@ -1,16 +1,16 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-import uvicorn
-
-from db.db import create_tables, drop_tables
-from api.routers import all_routers
-
-from contextlib import asynccontextmanager
-from collections.abc import AsyncIterator
-
 from redis import asyncio as aioredis
+
+from api.routers import all_routers
 from config import settings
+from db.db import create_tables, drop_tables
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -21,17 +21,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await drop_tables()
 
 
-app = FastAPI(
-    title='Microblog',
-    prefix='/api',
-    lifespan=lifespan
-    )
+app = FastAPI(title="Microblog", prefix="/api", lifespan=lifespan)
 
 for router in all_routers:
     app.include_router(router)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         reload=True,

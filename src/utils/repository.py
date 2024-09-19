@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
 
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -9,19 +8,19 @@ class AbstractRepository(ABC):
     @abstractmethod
     async def add_one():
         raise NotImplementedError
-    
+
     @abstractmethod
     async def get_one():
         raise NotImplementedError
-    
+
     @abstractmethod
     async def get_all():
         raise NotImplementedError
-    
+
     @abstractmethod
     async def update_one():
         raise NotImplementedError
-    
+
     @abstractmethod
     async def delete_one():
         raise NotImplementedError
@@ -34,8 +33,7 @@ class SQLAlchemyRepository(AbstractRepository):
         stmt = insert(self.model).values(**data, **ids).returning(self.model.id)
 
         result = await session.execute(stmt)
-        await session.commit()
-        return result.scalar_one()    
+        return result.scalar_one()
 
     async def get_one(self, session: AsyncSession, **filters):
         stmt = select(self.model)
@@ -44,7 +42,7 @@ class SQLAlchemyRepository(AbstractRepository):
             stmt = stmt.filter(getattr(self.model, key) == val)
 
         result = await session.execute(stmt)
-        return result.scalar_one_or_none()    
+        return result.scalar_one_or_none()
 
     async def get_all(self, session: AsyncSession, **filters):
         stmt = select(self.model)
@@ -63,7 +61,6 @@ class SQLAlchemyRepository(AbstractRepository):
         stmt = stmt.values(**data).returning(self.model.id)
 
         result = await session.execute(stmt)
-        await session.commit()
         return result.scalar_one()
 
     async def delete_one(self, session: AsyncSession, **ids: int):
@@ -73,5 +70,4 @@ class SQLAlchemyRepository(AbstractRepository):
             stmt = stmt.filter(getattr(self.model, key) == val)
 
         result = await session.execute(stmt)
-        await session.commit()
         return result.scalar_one()

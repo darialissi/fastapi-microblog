@@ -2,19 +2,20 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi_cache.decorator import cache
 
 from models.categories import Category
-from .posts import service
-from .dependencies import session
 
+from .dependencies import session
+from .posts import Service
 
 router = APIRouter(
     prefix="/categories",
 )
 
-@router.get("/{category}") 
+
+@router.get("/{category}", summary="Получение постов по данной категории")
 @cache(expire=30)
 async def get_posts(
     category: Category,
-    posts_service: service,
+    posts_service: Service,
     session: session,
 ):
     resp = await posts_service.get_posts(session, category=category)
@@ -24,5 +25,3 @@ async def get_posts(
             detail=f"Посты {category.value=} не найдены",
         )
     return {"response": resp}
-
-

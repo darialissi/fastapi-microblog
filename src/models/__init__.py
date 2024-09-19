@@ -1,1 +1,1 @@
-__all__ = ['posts', 'comments', 'users']
+__all__ = ["posts", "comments", "users"]
