@@ -1,26 +1,15 @@
-from typing import Annotated
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.db import get_async_session
-from repositories.comments import CommentsRepository
-from repositories.posts import PostsRepository
-from repositories.users import UsersRepository
-from services.comments import CommentsService
-from services.posts import PostsService
-from services.users import UsersService
-
-session = Annotated[AsyncSession, Depends(get_async_session)]
+from db.db import async_session
+from utils.unitofwork import DBManager
 
 
-def posts_service():
-    return PostsService(PostsRepository)
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with DBManager(async_session) as db:
+        yield db
 
 
-def comments_service():
-    return CommentsService(CommentsRepository)
-
-
-def users_service():
-    return UsersService(UsersRepository)
+UOW_db = Annotated[DBManager, Depends(get_db)]

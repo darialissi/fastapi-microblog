@@ -20,7 +20,7 @@ class Post(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     category: Mapped[Category]
     body: Mapped[str] = mapped_column(nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
 
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]

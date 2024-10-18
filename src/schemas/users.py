@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class UserSchemaAdd(BaseModel):
     """
-    Схема модели User, используется при создании
+    Схема модели User, используется при создании/обновлении
     """
 
     username: str = Field(min_length=5, max_length=30, pattern="^[A-Za-z0-9-_]+$")
@@ -28,12 +28,3 @@ class UserSchema(BaseModel):
     posts: Set
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class UserSchemaUpdate(BaseModel):
-    """
-    Схема модели User, используется при обновлении
-    """
-
-    username: str = Field(min_length=5, max_length=30, pattern="^[A-Za-z0-9-_]+$")
-    password: str = Field(min_length=5)

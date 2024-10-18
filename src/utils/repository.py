@@ -29,45 +29,48 @@ class AbstractRepository(ABC):
 class SQLAlchemyRepository(AbstractRepository):
     model = None
 
-    async def add_one(self, session: AsyncSession, data: dict, **ids: int):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def add_one(self, data: dict, **ids: int):
         stmt = insert(self.model).values(**data, **ids).returning(self.model.id)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalar_one()
 
-    async def get_one(self, session: AsyncSession, **filters):
+    async def get_one(self, **filters):
         stmt = select(self.model)
         while filters:
             key, val = filters.popitem()
             stmt = stmt.filter(getattr(self.model, key) == val)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all(self, session: AsyncSession, **filters):
+    async def get_all(self, **filters):
         stmt = select(self.model)
         while filters:
             key, val = filters.popitem()
             stmt = stmt.filter(getattr(self.model, key) == val)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def update_one(self, session: AsyncSession, data: dict, **ids: int):
+    async def update_one(self, data: dict, **ids: int):
         stmt = update(self.model)
         while ids:
             key, val = ids.popitem()
             stmt = stmt.filter(getattr(self.model, key) == val)
         stmt = stmt.values(**data).returning(self.model.id)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalar_one()
 
-    async def delete_one(self, session: AsyncSession, **ids: int):
+    async def delete_one(self, **ids: int):
         stmt = delete(self.model).returning(self.model.id)
         while ids:
             key, val = ids.popitem()
             stmt = stmt.filter(getattr(self.model, key) == val)
 
-        result = await session.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalar_one()

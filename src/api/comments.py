@@ -1,11 +1,9 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 from sqlalchemy import exc
 
-from api.dependencies import comments_service, session
-from schemas.comments import CommentSchemaAdd, CommentSchemaUpdate
+from api.dependencies import UOW_db
+from schemas.comments import CommentSchemaAdd
 from services.comments import CommentsService
 
 from .auth.router import get_current_user
@@ -14,19 +12,17 @@ router = APIRouter(
     prefix="/{post_id}/comments",
 )
 
-Service = Annotated[CommentsService, Depends(comments_service)]
-
 
 @router.post("", status_code=status.HTTP_201_CREATED, summary="Добавление нового комментария")
 async def add_comment(
     post_id: int,
     comment: CommentSchemaAdd,
-    comments_service: Service,
-    session: session,
+    db: UOW_db,
+    service: CommentsService = Depends(),
     user: str = Depends(get_current_user),
 ):
     try:
-        resp = await comments_service.add_comment(session, user, comment, post_id=post_id)
+        resp = await service.add_comment(db, user, comment, post_id=post_id)
     except exc.IntegrityError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -39,10 +35,10 @@ async def add_comment(
 @cache(expire=30)
 async def get_comments(
     post_id: int,
-    comments_service: Service,
-    session: session,
+    db: UOW_db,
+    service: CommentsService = Depends(),
 ):
-    resp = await comments_service.get_comments(session, post_id=post_id)
+    resp = await service.get_comments(db, post_id=post_id)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -55,10 +51,10 @@ async def get_comments(
 async def get_comment(
     post_id: int,
     id_: int,
-    comments_service: Service,
-    session: session,
+    db: UOW_db,
+    service: CommentsService = Depends(),
 ):
-    resp = await comments_service.get_comment(session, post_id=post_id, id=id_)
+    resp = await service.get_comment(db, post_id=post_id, id=id_)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -71,13 +67,18 @@ async def get_comment(
 async def update_comment(
     post_id: int,
     id_: int,
-    data: CommentSchemaUpdate,
-    comments_service: Service,
-    session: session,
+    data: CommentSchemaAdd,
+    db: UOW_db,
+    service: CommentsService = Depends(),
     user: str = Depends(get_current_user),
 ):
+    if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
+        )
     try:
-        resp = await comments_service.update_comment(session, data, post_id=post_id, id=id_)
+        resp = await service.update_comment(db, data, post_id=post_id, id=id_)
     except exc.NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -90,12 +91,17 @@ async def update_comment(
 async def delete_post(
     post_id: int,
     id_: int,
-    comments_service: Service,
-    session: session,
+    db: UOW_db,
+    service: CommentsService = Depends(),
     user: str = Depends(get_current_user),
 ):
+    if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
+        )
     try:
-        resp = await comments_service.delete_comment(session, post_id=post_id, id=id_)
+        resp = await service.delete_comment(db, post_id=post_id, id=id_)
     except exc.NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

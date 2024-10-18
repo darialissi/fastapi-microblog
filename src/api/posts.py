@@ -1,11 +1,9 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 from sqlalchemy import exc
 
-from api.dependencies import posts_service, session
-from schemas.posts import PostSchemaAdd, PostSchemaUpdate
+from api.dependencies import UOW_db
+from schemas.posts import PostSchemaAdd
 from services.posts import PostsService
 
 from .auth.router import get_current_user
@@ -15,18 +13,16 @@ router = APIRouter(
     tags=["Posts"],
 )
 
-Service = Annotated[PostsService, Depends(posts_service)]
-
 
 @router.post("", status_code=status.HTTP_201_CREATED, summary="Добавление нового поста")
 async def add_post(
     post: PostSchemaAdd,
-    posts_service: Service,
-    session: session,
+    db: UOW_db,
+    service: PostsService = Depends(),
     user: str = Depends(get_current_user),
 ):
     try:
-        resp = await posts_service.add_post(session, user, post)
+        resp = await service.add_post(db, user, post)
     except exc.IntegrityError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -38,10 +34,10 @@ async def add_post(
 @router.get("", summary="Получение всех постов пользователя")
 @cache(expire=30)
 async def get_posts(
-    posts_service: Service,
-    session: session,
+    db: UOW_db,
+    service: PostsService = Depends(),
 ):
-    resp = await posts_service.get_posts(session)
+    resp = await service.get_posts(db)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -54,10 +50,10 @@ async def get_posts(
 @cache(expire=30)
 async def get_post(
     id_: int,
-    posts_service: Service,
-    session: session,
+    db: UOW_db,
+    service: PostsService = Depends(),
 ):
-    resp = await posts_service.get_post(session, id=id_)
+    resp = await service.get_post(db, id=id_)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -69,13 +65,18 @@ async def get_post(
 @router.patch("/{id_}", summary="Обновление поста")
 async def update_post(
     id_: int,
-    data: PostSchemaUpdate,
-    posts_service: Service,
-    session: session,
+    data: PostSchemaAdd,
+    db: UOW_db,
+    service: PostsService = Depends(),
     user: str = Depends(get_current_user),
 ):
+    if not await service.validate_author_post(db, user, post_id=id_):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором поста {id_=}",
+        )
     try:
-        resp = await posts_service.update_post(session, data, id=id_)
+        resp = await service.update_post(db, data, id=id_)
     except exc.NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,12 +88,17 @@ async def update_post(
 @router.delete("/{id_}", summary="Удаление поста")
 async def delete_post(
     id_: int,
-    posts_service: Service,
-    session: session,
+    db: UOW_db,
+    service: PostsService = Depends(),
     user: str = Depends(get_current_user),
 ):
+    if not await service.validate_author_post(db, user, post_id=id_):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором поста {id_=}",
+        )
     try:
-        resp = await posts_service.delete_post(session, id=id_)
+        resp = await service.delete_post(db, id=id_)
     except exc.NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

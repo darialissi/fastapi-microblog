@@ -4,7 +4,6 @@
 
 # certs
 
-venv
+.venv
 
 .env
-.env-test

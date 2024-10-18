@@ -1,26 +1,23 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
-from api.dependencies import session, users_service
 from services.users import UsersService
+
+from .dependencies import UOW_db
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
 )
 
-Service = Annotated[UsersService, Depends(users_service)]
-
 
 @router.get("", summary="Получение всех пользователей")
 @cache(expire=30)
 async def get_users(
-    users_service: Service,
-    session: session,
+    db: UOW_db,
+    service: UsersService = Depends(),
 ):
-    resp = await users_service.get_users(session)
+    resp = await service.get_users(db)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -35,10 +32,10 @@ async def get_users(
 @cache(expire=30)
 async def get_user(
     id_: int,
-    users_service: Service,
-    session: session,
+    db: UOW_db,
+    service: UsersService = Depends(),
 ):
-    resp = await users_service.get_user(session, id=id_)
+    resp = await service.get_user(db, id=id_)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CommentSchemaAdd(BaseModel):
     """
-    Схема модели Comment, используется при создании
+    Схема модели Comment, используется при создании/обновлении
     """
 
     body: str
@@ -24,11 +24,3 @@ class CommentSchema(CommentSchemaAdd):
 
     post_id: int = Field(gt=0)
     author_id: int = Field(gt=0)
-
-
-class CommentSchemaUpdate(BaseModel):
-    """
-    Схема модели Comment, используется при обновлении
-    """
-
-    body: str

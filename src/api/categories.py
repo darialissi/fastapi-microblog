@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_cache.decorator import cache
 
 from models.categories import Category
+from services.posts import PostsService
 
-from .dependencies import session
-from .posts import Service
+from .dependencies import UOW_db
 
 router = APIRouter(
     prefix="/categories",
@@ -15,10 +15,10 @@ router = APIRouter(
 @cache(expire=30)
 async def get_posts(
     category: Category,
-    posts_service: Service,
-    session: session,
+    db: UOW_db,
+    service: PostsService = Depends(),
 ):
-    resp = await posts_service.get_posts(session, category=category)
+    resp = await service.get_posts(db, category=category)
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
