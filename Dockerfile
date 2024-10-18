@@ -13,6 +13,5 @@ RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi
 
 COPY . .
-WORKDIR src
 
-CMD python -m uvicorn main:app --host 0.0.0.0 --port 8000
+CMD ["python", "src/main.py"]

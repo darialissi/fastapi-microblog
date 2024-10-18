@@ -27,6 +27,8 @@ services:
   redis:
     container_name: redis_container
     image: redis:alpine
+    env_file:
+      - .env-docker
     ports:
       - '6380:6379'
     restart: always
