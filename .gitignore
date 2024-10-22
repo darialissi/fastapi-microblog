@@ -2,7 +2,7 @@
 .pytest_cache
 .vscode
 
-# certs
+certs
 
 .venv
 

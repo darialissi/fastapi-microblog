@@ -9,13 +9,6 @@ from db.db import redis_client
 from .redis import RedisStorage
 from .schemas import TokenType
 
-# /certs - в корне приложения
-# openssl genrsa -out jwt-private.pem 2048
-# openssl rsa -in jwt-private.pem -outform PEM -pubout -out jwt-public.pem
-
-# >>> private_key = b"-----BEGIN PRIVATE KEY-----\nMIGEAgEAMBAGByqGSM49AgEGBS..."\
-# >>> public_key = b"-----BEGIN PUBLIC KEY-----\nMHYwEAYHKoZIzj0CAQYFK4EEAC..."
-
 
 class Token:
 

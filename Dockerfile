@@ -14,4 +14,4 @@ RUN poetry config virtualenvs.create false && \
 
 COPY . .
 
-CMD ["python", "src/main.py"]
+CMD bash script.sh && python src/main.py
