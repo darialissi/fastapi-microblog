@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import ExpiredSignatureError
 
 from api.dependencies import Redis_db, UOW_db
-from schemas.users import UserSchemaAdd, UserSchemaResp
+from schemas.users import UserSchemaAdd, UserSchemaAuth
 from services.users import UsersService
 from utils.password import Password
 
@@ -27,14 +27,14 @@ async def add_user(
     db: UOW_db,
     service: UsersService = Depends(),
 ):
-    existed = await service.get_user(db, username=user.model_dump()["username"])
+    existed = await service.get_user(db, username=user.username)
     if existed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь с указанным username уже существует",
         )
     resp = await service.add_user(db, user)
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.post("/token", summary="Получение access и refresh токена")
@@ -103,7 +103,7 @@ async def get_current_user(
     db: UOW_db,
     service: UsersService = Depends(),
     token: str = Depends(oauth2_scheme),
-) -> UserSchemaResp:
+) -> UserSchemaAuth:
 
     if not token:
         raise HTTPException(
@@ -124,23 +124,24 @@ async def get_current_user(
 
     user_id = int(payload.get("sub").split(":")[-1])
 
-    if not (resp := await service.get_user(db, id=user_id)):
+    if not (user := await service.get_user(db, id=user_id)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not exist",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    resp.__dict__.pop("hashed_password")
+    resp = user.model_dump()
+    resp.pop("hashed_password")
     logged_in_at = datetime.fromtimestamp(payload.get("iat"), tz=timezone.utc)
-    resp.__dict__.update({"logged_in_at": logged_in_at})
+    resp.update({"logged_in_at": logged_in_at})
 
-    return UserSchemaResp(**resp.__dict__)
+    return UserSchemaAuth(**resp)
 
 
 @router.get("/account", summary="Получение авторизованного аккаунта")
 async def get_auth_user(
-    user: UserSchemaResp = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     return {"response": user}
 
@@ -150,18 +151,18 @@ async def update_auth_user(
     data: UserSchemaAdd,
     db: UOW_db,
     service: UsersService = Depends(),
-    user: UserSchemaResp = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     existed = await service.get_user(db, username=data.username)
 
-    if existed:
+    if existed and existed.username != data.username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Пользователь с указанным username уже существует",
         )
 
     resp = await service.update_user(db, data, id=user.id)
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.delete("/account", summary="Удаление авторизованного аккаунта")
@@ -169,11 +170,11 @@ async def delete_auth_user(
     db: UOW_db,
     redis: Redis_db,
     service: UsersService = Depends(),
-    user: UserSchemaResp = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
 
     resp = await service.delete_user(db, id=user.id)
 
     await RedisStorage.revoke_token(redis_client=redis, key=f"user:{user.id}")
 
-    return {"response": {"id": resp}}
+    return {"response": resp}

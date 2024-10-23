@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Set
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,22 +14,28 @@ class UserSchemaAdd(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserSchema(BaseModel):
+class UserSchemaID(BaseModel):
+    """
+    Схема модели User ID
+    """
+
+    id: int
+
+
+class UserSchema(UserSchemaID):
     """
     Общая схема модели User
     """
 
-    id: int
     username: str
     hashed_password: str
     created_at: datetime
     updated_at: datetime
-    posts: Set
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserSchemaResp(BaseModel):
+class UserSchemaAuth(BaseModel):
     """
     Общая схема модели User
     """
@@ -40,3 +45,5 @@ class UserSchemaResp(BaseModel):
     created_at: datetime
     updated_at: datetime
     logged_in_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
