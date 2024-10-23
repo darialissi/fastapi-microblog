@@ -1,5 +1,5 @@
 from schemas.users import UserSchema, UserSchemaAdd
-from utils.password import hash_password
+from utils.password import Password
 from utils.unitofwork import DBManager
 
 
@@ -8,7 +8,7 @@ class UsersService:
     async def add_user(self, db: DBManager, user: UserSchemaAdd):
         u_dict = user.model_dump()
         password = u_dict.pop("password")
-        u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
+        u_dict.update({"hashed_password": Password.hash_password(password)})
         u_id = await db.users.add_one(u_dict)
         await db.commit()
         return u_id
@@ -24,7 +24,7 @@ class UsersService:
     async def update_user(self, db: DBManager, user: UserSchemaAdd, **ids) -> int:
         u_dict = user.model_dump()
         password = u_dict.pop("password")
-        u_dict.update({"hashed_password": hash_password(password).decode("utf-8")})
+        u_dict.update({"hashed_password": Password.hash_password(password)})
         u_id = await db.users.update_one(u_dict, **ids)
         await db.commit()
         return u_id

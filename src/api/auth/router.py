@@ -4,11 +4,10 @@ from fastapi import APIRouter, Depends, Form, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import ExpiredSignatureError
 
-from api.dependencies import UOW_db
-from models.users import User
-from schemas.users import UserSchemaAdd
+from api.dependencies import Redis_db, UOW_db
+from schemas.users import UserSchemaAdd, UserSchemaResp
 from services.users import UsersService
-from utils.password import validate_password
+from utils.password import Password
 
 from .redis import RedisStorage
 from .schemas import TokenSchema
@@ -41,6 +40,7 @@ async def add_user(
 @router.post("/token", summary="Получение access и refresh токена")
 async def auth_user(
     db: UOW_db,
+    redis: Redis_db,
     service: UsersService = Depends(),
     form_data: OAuth2PasswordRequestForm = Depends(),
 ):
@@ -51,39 +51,50 @@ async def auth_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if not validate_password(password=form_data.password, hashed_password=user.hashed_password):
+    if not Password.validate_password(password=form_data.password, hashed_password=user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token, refresh_token = await Token.generate_tokens(user.id, user.username)
+    access_token, refresh_token = Token.generate_tokens(user.id, user.username)
+
+    await RedisStorage.add_token(redis_client=redis, key=f"user:{user.id}", value=refresh_token)
 
     return TokenSchema(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh-token", summary="Обновление access и refresh токена")
-async def refresh_token(grant_type: str = Form("refresh_token"), refresh_token: str = Form()):
-    """
-    Issue new tokens by refresh token
-    """
+@router.post("/refresh", summary="Обновление access и refresh токена")
+async def refresh_token(redis: Redis_db, grant_type: str = Form("refresh_token"), refresh_token: str = Form()):
+
     try:
         payload = Token.decode_jwt(refresh_token)
 
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token has been expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     user_sub = payload.get("sub")
+
+    valid_token = await RedisStorage.get_token(redis_client=redis, key=user_sub)
+
+    if refresh_token != valid_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token is not valid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user_id = int(user_sub.split(":")[-1])
     username = payload.get("username")
 
-    await RedisStorage.revoke_token(user_sub)
-    access_token, refresh_token = await Token.generate_tokens(user_id, username)
+    access_token, refresh_token = Token.generate_tokens(user_id, username)
+
+    await RedisStorage.add_token(redis_client=redis, key=user_sub, value=refresh_token)
 
     return TokenSchema(access_token=access_token, refresh_token=refresh_token)
 
@@ -92,7 +103,8 @@ async def get_current_user(
     db: UOW_db,
     service: UsersService = Depends(),
     token: str = Depends(oauth2_scheme),
-) -> User:
+) -> UserSchemaResp:
+
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -105,24 +117,30 @@ async def get_current_user(
 
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     user_id = int(payload.get("sub").split(":")[-1])
 
-    resp = await service.get_user(db, id=user_id)
-    resp.__dict__.pop("hashed_password")
+    if not (resp := await service.get_user(db, id=user_id)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User does not exist",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
+    resp.__dict__.pop("hashed_password")
     logged_in_at = datetime.fromtimestamp(payload.get("iat"), tz=timezone.utc)
     resp.__dict__.update({"logged_in_at": logged_in_at})
-    return resp
+
+    return UserSchemaResp(**resp.__dict__)
 
 
 @router.get("/account", summary="Получение авторизованного аккаунта")
 async def get_auth_user(
-    user: str = Depends(get_current_user),
+    user: UserSchemaResp = Depends(get_current_user),
 ):
     return {"response": user}
 
@@ -132,7 +150,7 @@ async def update_auth_user(
     data: UserSchemaAdd,
     db: UOW_db,
     service: UsersService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaResp = Depends(get_current_user),
 ):
     existed = await service.get_user(db, username=data.username)
 
@@ -149,9 +167,13 @@ async def update_auth_user(
 @router.delete("/account", summary="Удаление авторизованного аккаунта")
 async def delete_auth_user(
     db: UOW_db,
+    redis: Redis_db,
     service: UsersService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaResp = Depends(get_current_user),
 ):
 
     resp = await service.delete_user(db, id=user.id)
+
+    await RedisStorage.revoke_token(redis_client=redis, key=f"user:{user.id}")
+
     return {"response": {"id": resp}}

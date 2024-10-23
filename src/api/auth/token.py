@@ -4,9 +4,7 @@ import jwt
 from jwt.exceptions import ExpiredSignatureError
 
 from config import settings
-from db.db import redis_client
 
-from .redis import RedisStorage
 from .schemas import TokenType
 
 
@@ -58,16 +56,12 @@ class Token:
         )
 
     @classmethod
-    async def generate_tokens(cls, user_id: int, username: str):
+    def generate_tokens(cls, user_id: int, username: str) -> tuple[str]:
 
         expire_access = timedelta(minutes=settings.jwt.access_token_expire_minutes)
         expire_refresh = timedelta(days=settings.jwt.refresh_token_expire_days)
 
         access_token = cls.create_token(user_id, username, token_type=TokenType.access, expire=expire_access)
         refresh_token = cls.create_token(user_id, username, token_type=TokenType.refresh, expire=expire_refresh)
-
-        await RedisStorage.add_token(
-            redis_client=redis_client, key=f"user:{user_id}", value=refresh_token, expire=expire_refresh
-        )
 
         return access_token, refresh_token

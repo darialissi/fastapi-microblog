@@ -28,3 +28,15 @@ class UserSchema(BaseModel):
     posts: Set
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserSchemaResp(BaseModel):
+    """
+    Общая схема модели User
+    """
+
+    id: int
+    username: str
+    created_at: datetime
+    updated_at: datetime
+    logged_in_at: datetime
