@@ -78,7 +78,7 @@ async def update_post(
             detail=f"Пост {id_=} не существует",
         )
 
-    if not service.is_author_post(user.id, post.author_id):
+    if post.author_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором поста {id_=}",
@@ -103,7 +103,7 @@ async def delete_post(
             detail=f"Пост {id_=} не существует",
         )
 
-    if not service.is_author_post(user.id, post.author_id):
+    if post.author_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором поста {id_=}",

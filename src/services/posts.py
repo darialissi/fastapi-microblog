@@ -21,9 +21,6 @@ class PostsService:
             return [PostSchema.model_validate(post) for post in posts]
         return []
 
-    def is_author_post(self, user_id: int, post_author: int) -> bool:
-        return post_author == user_id
-
     async def update_post(self, db: DBManager, post: PostSchemaAdd, **ids) -> PostSchemaID:
         p_dict = post.model_dump()
         p_id = await db.posts.update_one(p_dict, **ids)

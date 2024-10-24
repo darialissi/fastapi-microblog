@@ -80,7 +80,7 @@ async def update_comment(
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
 
-    if not service.is_author_comment(user.id, comment.author_id):
+    if comment.author_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором комментария {id_=}",
@@ -106,7 +106,7 @@ async def delete_post(
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
 
-    if not service.is_author_comment(user.id, comment.author_id):
+    if comment.author_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором комментария {id_=}",

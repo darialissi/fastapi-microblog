@@ -13,7 +13,7 @@ class Password:
         return cls.pwd_context.hash(password)
 
     @classmethod
-    def validate_password(
+    def is_valid_password(
         cls,
         password: str,
         hashed_password: str,

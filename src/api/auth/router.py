@@ -51,7 +51,7 @@ async def auth_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if not Password.validate_password(password=form_data.password, hashed_password=user.hashed_password):
+    if not Password.is_valid_password(password=form_data.password, hashed_password=user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
