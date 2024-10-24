@@ -13,12 +13,19 @@ class CommentSchemaAdd(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CommentSchema(CommentSchemaAdd):
+class CommentSchemaID(BaseModel):
     """
     Общая схема модели Comment
     """
 
     id: int
+
+
+class CommentSchema(CommentSchemaAdd, CommentSchemaID):
+    """
+    Общая схема модели Comment
+    """
+
     created_at: datetime
     updated_at: datetime
 

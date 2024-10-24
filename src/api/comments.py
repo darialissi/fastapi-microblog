@@ -4,6 +4,7 @@ from sqlalchemy import exc
 
 from api.dependencies import UOW_db
 from schemas.comments import CommentSchemaAdd
+from schemas.users import UserSchemaAuth
 from services.comments import CommentsService
 
 from .auth.router import get_current_user
@@ -19,7 +20,7 @@ async def add_comment(
     comment: CommentSchemaAdd,
     db: UOW_db,
     service: CommentsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     try:
         resp = await service.add_comment(db, user, comment, post_id=post_id)
@@ -28,7 +29,7 @@ async def add_comment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{e.orig.args[0]}",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.get("", summary="Получение всех комментариев к посту")
@@ -70,7 +71,7 @@ async def update_comment(
     data: CommentSchemaAdd,
     db: UOW_db,
     service: CommentsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
         raise HTTPException(
@@ -84,7 +85,7 @@ async def update_comment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.delete("/{id_}", summary="Удаление комментария")
@@ -93,7 +94,7 @@ async def delete_post(
     id_: int,
     db: UOW_db,
     service: CommentsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
         raise HTTPException(
@@ -107,4 +108,4 @@ async def delete_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}
