@@ -71,19 +71,19 @@ async def update_post(
     service: PostsService = Depends(),
     user: UserSchemaAuth = Depends(get_current_user),
 ):
-    
+
     if not (post := await service.get_post(db, id=id_)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Пост {id_=} не существует",
         )
-    
-    if not await service.is_author_post(user.id, post.author_id):
+
+    if not service.is_author_post(user.id, post.author_id):
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором поста {id_=}",
         )
-    
+
     resp = await service.update_post(db, data, id=id_)
 
     return {"response": resp}
@@ -96,19 +96,19 @@ async def delete_post(
     service: PostsService = Depends(),
     user: UserSchemaAuth = Depends(get_current_user),
 ):
-    
+
     if not (post := await service.get_post(db, id=id_)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Пост {id_=} не существует",
         )
-    
-    if not await service.is_author_post(user.id, post.author_id):
+
+    if not service.is_author_post(user.id, post.author_id):
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
             detail=f"Пользователь {user.username} не является автором поста {id_=}",
         )
-    
+
     resp = await service.delete_post(db, id=id_)
 
     return {"response": resp}

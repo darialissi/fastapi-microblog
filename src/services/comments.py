@@ -23,7 +23,7 @@ class CommentsService:
             return [CommentSchema.model_validate(comment) for comment in comments]
         return []
 
-    async def is_author_comment(self, user_id: int, comment_author: int) -> bool:
+    def is_author_comment(self, user_id: int, comment_author: int) -> bool:
         return comment_author == user_id
 
     async def update_comment(self, db: DBManager, comment: CommentSchemaAdd, **ids) -> CommentSchemaID:
