@@ -21,11 +21,10 @@ class CommentsService:
     async def get_comments(self, db: DBManager, **filters) -> list[CommentSchema]:
         if comments := await db.comments.get_all(**filters):
             return [CommentSchema.model_validate(comment) for comment in comments]
+        return []
 
-    async def validate_author_comment(self, db: DBManager, user: UserSchemaAuth, post_id: int, comment_id: int) -> bool:
-        comment = await db.comments.get_one(post_id=post_id, id=comment_id)
-        c_author = comment.__dict__.get("author_id")
-        return c_author == user.id
+    async def is_author_comment(self, user_id: int, comment_author: int) -> bool:
+        return comment_author == user_id
 
     async def update_comment(self, db: DBManager, comment: CommentSchemaAdd, **ids) -> CommentSchemaID:
         c_dict = comment.model_dump()

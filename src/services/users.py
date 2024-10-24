@@ -20,6 +20,7 @@ class UsersService:
     async def get_users(self, db: DBManager, **filters) -> list[UserSchema]:
         if users := await db.users.get_all(**filters):
             return [UserSchema.model_validate(user) for user in users]
+        return []
 
     async def update_user(self, db: DBManager, user: UserSchemaAdd, **ids) -> UserSchemaID:
         u_dict = user.model_dump()

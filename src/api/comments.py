@@ -73,18 +73,21 @@ async def update_comment(
     service: CommentsService = Depends(),
     user: UserSchemaAuth = Depends(get_current_user),
 ):
-    if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
-        raise HTTPException(
-            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
-        )
-    try:
-        resp = await service.update_comment(db, data, post_id=post_id, id=id_)
-    except exc.NoResultFound:
+
+    if not (comment := await service.get_comment(db, post_id=post_id, id=id_)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
+    
+    if not await service.is_author_comment(user.id, comment.author_id):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
+        )
+
+    resp = await service.update_comment(db, data, post_id=post_id, id=id_)
+
     return {"response": resp}
 
 
@@ -96,16 +99,19 @@ async def delete_post(
     service: CommentsService = Depends(),
     user: UserSchemaAuth = Depends(get_current_user),
 ):
-    if not await service.validate_author_comment(db, user, post_id=post_id, comment_id=id_):
-        raise HTTPException(
-            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
-        )
-    try:
-        resp = await service.delete_comment(db, post_id=post_id, id=id_)
-    except exc.NoResultFound:
+
+    if not (comment := await service.get_comment(db, post_id=post_id, id=id_)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Комментарий {id_=}, {post_id=} не существует",
         )
+    
+    if not await service.is_author_comment(user.id, comment.author_id):
+        raise HTTPException(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            detail=f"Пользователь {user.username} не является автором комментария {id_=}",
+        )
+
+    resp = await service.delete_comment(db, post_id=post_id, id=id_)
+
     return {"response": resp}

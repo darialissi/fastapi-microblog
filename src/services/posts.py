@@ -19,11 +19,10 @@ class PostsService:
     async def get_posts(self, db: DBManager, **filters) -> list[PostSchema]:
         if posts := await db.posts.get_all(**filters):
             return [PostSchema.model_validate(post) for post in posts]
+        return []
 
-    async def validate_author_post(self, db: DBManager, user: UserSchemaAuth, post_id: int) -> bool:
-        post = await db.posts.get_one(id=post_id)
-        p_author = post.__dict__.get("author_id")
-        return p_author == user.id
+    async def is_author_post(self, user_id: int, post_author: int) -> bool:
+        return post_author == user_id
 
     async def update_post(self, db: DBManager, post: PostSchemaAdd, **ids) -> PostSchemaID:
         p_dict = post.model_dump()

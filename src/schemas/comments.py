@@ -15,7 +15,7 @@ class CommentSchemaAdd(BaseModel):
 
 class CommentSchemaID(BaseModel):
     """
-    Общая схема модели Comment
+    Схема модели Comment ID
     """
 
     id: int
