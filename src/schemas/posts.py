@@ -17,12 +17,19 @@ class PostSchemaAdd(BaseModel):
     model_config = ConfigDict(use_enum_values=True, from_attributes=True)
 
 
-class PostSchema(PostSchemaAdd):
+class PostSchemaID(BaseModel):
+    """
+    Схема модели Post ID
+    """
+
+    id: int
+
+
+class PostSchema(PostSchemaAdd, PostSchemaID):
     """
     Общая схема модели Post
     """
 
-    id: int
     created_at: datetime
     updated_at: datetime
     author_id: int = Field(gt=0)

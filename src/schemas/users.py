@@ -35,12 +35,11 @@ class UserSchema(UserSchemaID):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserSchemaAuth(BaseModel):
+class UserSchemaAuth(UserSchemaID):
     """
-    Общая схема модели User
+    Схема модели User для текущего пользователя
     """
 
-    id: int
     username: str
     created_at: datetime
     updated_at: datetime

@@ -4,6 +4,7 @@ from sqlalchemy import exc
 
 from api.dependencies import UOW_db
 from schemas.posts import PostSchemaAdd
+from schemas.users import UserSchemaAuth
 from services.posts import PostsService
 
 from .auth.router import get_current_user
@@ -19,7 +20,7 @@ async def add_post(
     post: PostSchemaAdd,
     db: UOW_db,
     service: PostsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     try:
         resp = await service.add_post(db, user, post)
@@ -28,7 +29,7 @@ async def add_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{e.orig.args[0]}",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.get("", summary="Получение всех постов пользователя")
@@ -68,7 +69,7 @@ async def update_post(
     data: PostSchemaAdd,
     db: UOW_db,
     service: PostsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     if not await service.validate_author_post(db, user, post_id=id_):
         raise HTTPException(
@@ -82,7 +83,7 @@ async def update_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Пост {id_=} не существует",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}
 
 
 @router.delete("/{id_}", summary="Удаление поста")
@@ -90,7 +91,7 @@ async def delete_post(
     id_: int,
     db: UOW_db,
     service: PostsService = Depends(),
-    user: str = Depends(get_current_user),
+    user: UserSchemaAuth = Depends(get_current_user),
 ):
     if not await service.validate_author_post(db, user, post_id=id_):
         raise HTTPException(
@@ -104,4 +105,4 @@ async def delete_post(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Пост {id_=} не существует",
         )
-    return {"response": {"id": resp}}
+    return {"response": resp}

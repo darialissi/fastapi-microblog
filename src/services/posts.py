@@ -1,38 +1,37 @@
-from models.users import User
-from schemas.posts import PostSchema, PostSchemaAdd
-from schemas.users import UserSchema
+from schemas.posts import PostSchema, PostSchemaAdd, PostSchemaID
+from schemas.users import UserSchemaAuth
 from utils.unitofwork import DBManager
 
 
 class PostsService:
 
-    async def add_post(self, db: DBManager, user: User, post: PostSchemaAdd):
+    async def add_post(self, db: DBManager, user: UserSchemaAuth, post: PostSchemaAdd) -> PostSchemaID:
         p_dict = post.model_dump()
         p_dict.update({"author_id": user.id})
         p_id = await db.posts.add_one(p_dict)
         await db.commit()
-        return p_id
+        return PostSchemaID.model_validate({"id": p_id})
 
     async def get_post(self, db: DBManager, **filters) -> PostSchema:
-        post = await db.posts.get_one(**filters)
-        return post
+        if post := await db.posts.get_one(**filters):
+            return PostSchema.model_validate(post)
 
     async def get_posts(self, db: DBManager, **filters) -> list[PostSchema]:
-        posts = await db.posts.get_all(**filters)
-        return posts
+        if posts := await db.posts.get_all(**filters):
+            return [PostSchema.model_validate(post) for post in posts]
 
-    async def validate_author_post(self, db: DBManager, user: UserSchema, post_id: int):
+    async def validate_author_post(self, db: DBManager, user: UserSchemaAuth, post_id: int) -> bool:
         post = await db.posts.get_one(id=post_id)
         p_author = post.__dict__.get("author_id")
         return p_author == user.id
 
-    async def update_post(self, db: DBManager, post: PostSchemaAdd, **ids):
+    async def update_post(self, db: DBManager, post: PostSchemaAdd, **ids) -> PostSchemaID:
         p_dict = post.model_dump()
         p_id = await db.posts.update_one(p_dict, **ids)
         await db.commit()
-        return p_id
+        return PostSchemaID.model_validate({"id": p_id})
 
-    async def delete_post(self, db: DBManager, **ids):
+    async def delete_post(self, db: DBManager, **ids) -> PostSchemaID:
         p_id = await db.posts.delete_one(**ids)
         await db.commit()
-        return p_id
+        return PostSchemaID.model_validate({"id": p_id})
