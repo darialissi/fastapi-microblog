@@ -1,6 +1,8 @@
 from typing import AsyncGenerator
 
-from redis.asyncio import Redis
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from redis import asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
@@ -27,4 +29,8 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-redis_client = Redis.from_url(settings.db.REDIS_URL)
+redis_client = aioredis.from_url(settings.db.REDIS_URL)
+
+
+async def init_cache():
+    return FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")

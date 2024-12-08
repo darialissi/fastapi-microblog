@@ -1,26 +1,27 @@
 import asyncio
-from typing import AsyncGenerator
+from typing import AsyncGenerator, AsyncIterator
 
 import pytest
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from redis import asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from api.auth.schemas import TokenSchema
 from api.dependencies import get_db
+from config import settings
 from db.db import Base
-from src.main import app
+from main import app
+from models.categories import Category
+from schemas.comments import CommentSchemaAdd
+from schemas.posts import PostSchemaAdd
+from schemas.users import UserSchemaAdd
 from utils.unitofwork import DBManager
 
-pytestmark = pytest.mark.asyncio
-
-DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5433/test"
-REDIS_URL = "redis://localhost:6380"
-
-engine_test = create_async_engine(DATABASE_URL, poolclass=NullPool)
+engine_test = create_async_engine(settings.db.DATABASE_URL_asyncpg, poolclass=NullPool)
 async_session = sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 Base.metadata.bind = engine_test
 
@@ -33,9 +34,9 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True)
 async def prepare_database():
-    redis = aioredis.from_url(REDIS_URL)
+    redis = aioredis.from_url(settings.db.REDIS_URL)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -52,15 +53,46 @@ def event_loop():
     loop.close()
 
 
-transport = ASGITransport(app=app)
+@pytest.fixture
+async def ac() -> AsyncIterator[AsyncClient]:
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        yield client
 
 
-@pytest.fixture(scope="session")
-async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+@pytest.fixture
+def data_user() -> UserSchemaAdd:
+    return UserSchemaAdd(username="userfix", password="12345")
 
 
-@pytest.fixture(scope="session")
-def user_data():
-    return {"username": "userfix", "password": "12345"}
+@pytest.fixture(scope="function")
+async def register_fixture(ac: AsyncClient, data_user: UserSchemaAdd) -> None:
+    await ac.post("/auth/register", data=data_user.model_dump_json())
+
+
+@pytest.fixture(scope="function")
+async def token_fixture(ac: AsyncClient, data_user: UserSchemaAdd, register_fixture: None) -> str:
+    resp = await ac.post("/auth/token", data=data_user.model_dump_json())
+    token = TokenSchema(**resp.json())
+    return f"{token.token_type} {token.access_token}"
+
+
+@pytest.fixture(scope="function")
+def data_post() -> PostSchemaAdd:
+    return PostSchemaAdd(title="design patterns", category=Category.design, body="...")
+
+
+@pytest.fixture(scope="function")
+async def post_fixture(ac: AsyncClient, data_post: PostSchemaAdd, token_fixture: str) -> None:
+    await ac.post("/posts", data=data_post.model_dump_json(), headers={"Authorization": token_fixture})
+
+
+@pytest.fixture(scope="function")
+def data_comment() -> CommentSchemaAdd:
+    return CommentSchemaAdd(body="some comment")
+
+
+@pytest.fixture(scope="function")
+async def comment_fixture(
+    ac: AsyncClient, post_fixture: None, data_comment: CommentSchemaAdd, token_fixture: str
+) -> None:
+    await ac.post("/posts/1/comments", data=data_comment.model_dump_json(), headers={"Authorization": token_fixture})

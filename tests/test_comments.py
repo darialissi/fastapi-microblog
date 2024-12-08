@@ -2,6 +2,8 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
+from schemas.comments import CommentSchemaAdd
+
 
 class TestComments:
     @pytest.mark.parametrize(
@@ -11,44 +13,25 @@ class TestComments:
                 "post",
                 "/posts/1/comments",
                 status.HTTP_201_CREATED,
-                {
-                    "author_id": 1,
-                    "body": "test comment",
-                },
-            ),
-            (
-                "post",
-                "/posts/1/comments",
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                {
-                    "author_id": 0,
-                    "body": "test comment",
-                },
+                CommentSchemaAdd(body="test comment"),
             ),
             (
                 "post",
                 "/posts/5/comments",
                 status.HTTP_400_BAD_REQUEST,
-                {
-                    "author_id": 1,
-                    "body": "test comment",
-                },
+                CommentSchemaAdd(body="test comment"),
             ),
             (
                 "patch",
                 "/posts/1/comments/1",
                 status.HTTP_200_OK,
-                {
-                    "body": "new comment",
-                },
+                CommentSchemaAdd(body="test comment"),
             ),
             (
                 "patch",
                 "/posts/1/comments/5",
                 status.HTTP_400_BAD_REQUEST,
-                {
-                    "body": "new comment",
-                },
+                CommentSchemaAdd(body="test comment"),
             ),
             ("get", "/posts/1/comments", status.HTTP_200_OK, None),
             ("get", "/posts/5/comments", status.HTTP_404_NOT_FOUND, None),
@@ -58,33 +41,29 @@ class TestComments:
             ("delete", "/posts/1/comments/5", status.HTTP_400_BAD_REQUEST, None),
         ],
     )
-    async def test(self, ac: AsyncClient, user_data, method, endpoint, expected_status, data):
-
-        # auth user
-        await ac.post("/auth/register", json=user_data)
-        response = await ac.post("/auth/token", data=user_data)
-        access_token = response.json()["access_token"]
-
-        # create post
-        await ac.post(
-            "/posts",
-            json={
-                "user_id": 1,
-                "title": "test title",
-                "category": "development",
-                "body": "test post",
-            },
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
+    async def test(
+        self,
+        ac: AsyncClient,
+        token_fixture: str,
+        comment_fixture: None,
+        method: str,
+        endpoint: str,
+        expected_status: status,
+        data: CommentSchemaAdd,
+    ):
 
         match method:
             case "post":
-                response = await ac.post(endpoint, json=data, headers={"Authorization": f"Bearer {access_token}"})
+                response = await ac.post(
+                    endpoint, data=data.model_dump_json(), headers={"Authorization": token_fixture}
+                )
             case "get":
-                response = await ac.get(endpoint)
+                response = await ac.get(endpoint, headers={"Authorization": token_fixture})
             case "patch":
-                response = await ac.patch(endpoint, json=data, headers={"Authorization": f"Bearer {access_token}"})
+                response = await ac.patch(
+                    endpoint, data=data.model_dump_json(), headers={"Authorization": token_fixture}
+                )
             case "delete":
-                response = await ac.delete(endpoint, headers={"Authorization": f"Bearer {access_token}"})
+                response = await ac.delete(endpoint, headers={"Authorization": token_fixture})
 
         assert response.status_code == expected_status
