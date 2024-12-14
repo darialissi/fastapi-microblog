@@ -2,7 +2,9 @@
 
 - **git clone <https://github.com/darialissi/fastapi-microblog.git>**
 
-- **cd fastapi-microblog && docker-compose up**
+- **cd fastapi-microblog && bash script.sh**
+  
+- **docker-compose up**
 
 #
 

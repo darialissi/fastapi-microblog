@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED 1
 
 RUN pip install poetry
 
-RUN mkdir /f_app
 WORKDIR /f_app
 
 COPY poetry.lock pyproject.toml /
@@ -14,4 +13,4 @@ RUN poetry config virtualenvs.create false && \
 
 COPY . .
 
-CMD bash script.sh && python src/main.py
+CMD ["python", "src/main.py"]
